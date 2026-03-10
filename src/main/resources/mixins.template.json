@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.vomiter.recyclingarrows.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "AbstractArrowMixin",
+    "LivingEntityMixin"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "recyclingarrows.mixins.refmap.json"
+}
