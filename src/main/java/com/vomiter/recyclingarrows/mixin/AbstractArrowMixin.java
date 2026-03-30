@@ -2,6 +2,7 @@ package com.vomiter.recyclingarrows.mixin;
 
 import com.vomiter.recyclingarrows.RecyclingArrows;
 import com.vomiter.recyclingarrows.common.arrow.logic.IArrowAccessor;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
@@ -29,23 +30,26 @@ public abstract class AbstractArrowMixin implements IArrowAccessor {
         recyclingArrows$addArrow(hit);
     }
 
-
-    @Override
-    public ItemStack recyclingarrows$getItem() {
-        return getPickupItem();
-    }
-
     @Unique
     void recyclingArrows$addArrow(EntityHitResult hit){
         Entity entity = hit.getEntity();
         if(entity instanceof LivingEntity living){
             RecyclingArrows.LOGGER.debug("Add arrow {} to {}", getPickupItem(), living);
             if(living.isAlive()){
-                RecyclingArrows.ARROW_HIT_SERVICE.recordArrowHit((AbstractArrow)(Object) this, living);
+                RecyclingArrows.ARROW_HIT_SERVICE.recordArrowHit((AbstractArrow)(Object) this, living, hit);
+                living.level().getEntitiesOfClass(ServerPlayer.class, living.getBoundingBox().inflate(64)).forEach(serverPlayer -> {
+                    RecyclingArrows.arrowSyncService.syncToPlayer(living, serverPlayer);
+                });
             }
             else{
                 living.spawnAtLocation(getPickupItem());
             }
         }
     }
+
+    @Override
+    public ItemStack recyclingarrows$getItem() {
+        return getPickupItem();
+    }
+
 }

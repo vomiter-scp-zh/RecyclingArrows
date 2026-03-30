@@ -4,6 +4,9 @@ import com.mojang.logging.LogUtils;
 import com.vomiter.recyclingarrows.common.arrow.logic.ArrowHitService;
 import com.vomiter.recyclingarrows.common.arrow.platform.ForgeEntityArrowStorageAccess;
 import com.vomiter.recyclingarrows.common.event.EventHandler;
+import com.vomiter.recyclingarrows.common.network.ArrowSyncService;
+import com.vomiter.recyclingarrows.common.network.ForgeArrowNetworkBridge;
+import com.vomiter.recyclingarrows.common.network.ForgeNetworkRegistrar;
 import com.vomiter.recyclingarrows.common.registry.ModRegistries;
 import com.vomiter.recyclingarrows.data.ModDataGenerator;
 import net.minecraft.resources.ResourceLocation;
@@ -20,6 +23,7 @@ public class RecyclingArrows
     // Define mod id in a common place for everything to reference
     public static final String MOD_ID = "recyclingarrows";
     public static final Logger LOGGER = LogUtils.getLogger();
+    public static ArrowSyncService arrowSyncService;
 
     public static ResourceLocation modLoc(String path){
         return Helpers.id(RecyclingArrows.MOD_ID, path);
@@ -36,6 +40,9 @@ public class RecyclingArrows
         modBus.addListener(ModDataGenerator::generateData);
         ModRegistries.register(modBus);
         context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        ForgeNetworkRegistrar.register();
+        arrowSyncService = new ArrowSyncService(new ForgeArrowNetworkBridge());
+
     }
 
     private void commonSetup(final FMLCommonSetupEvent event)

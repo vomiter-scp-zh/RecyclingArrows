@@ -17,12 +17,12 @@ public final class ArrowRecordHolder implements IArrowRecordHolder {
 
         for (StoredArrowStack stack : arrows) {
             if (canStack(stack.getArrow(), arrow.getArrow())) {
-                stack.grow(arrow.getCount());
+                arrow.getOctants().forEach(stack::addArrow);
                 return;
             }
         }
 
-        arrows.add(new StoredArrowStack(arrow.getArrow(), arrow.getCount()));
+        arrows.add(new StoredArrowStack(arrow.getArrow(), arrow.getOctants()));
     }
 
     @Override

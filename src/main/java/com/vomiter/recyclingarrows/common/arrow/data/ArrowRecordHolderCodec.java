@@ -1,15 +1,21 @@
 package com.vomiter.recyclingarrows.common.arrow.data;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public final class ArrowRecordHolderCodec {
     private static final String KEY_ARROWS = "Arrows";
     private static final String KEY_ITEM = "Item";
     private static final String KEY_TAG = "Tag";
+    private static final String KEY_OCTANTS = "Octants";
+
+    // 可選：保留舊版相容
     private static final String KEY_COUNT = "Count";
 
     private ArrowRecordHolderCodec() {
@@ -23,7 +29,13 @@ public final class ArrowRecordHolderCodec {
             CompoundTag entry = new CompoundTag();
             entry.putString(KEY_ITEM, arrow.getArrow().itemId().toString());
             entry.put(KEY_TAG, arrow.getArrow().tag() == null ? new CompoundTag() : arrow.getArrow().tag().copy());
-            entry.putInt(KEY_COUNT, arrow.getCount());
+
+            ListTag octants = new ListTag();
+            for (HitOctant octant : arrow.getOctants()) {
+                octants.add(IntTag.valueOf(octant.ordinal()));
+            }
+            entry.put(KEY_OCTANTS, octants);
+
             list.add(entry);
         }
 
@@ -55,11 +67,27 @@ public final class ArrowRecordHolderCodec {
                     ? entry.getCompound(KEY_TAG).copy()
                     : new CompoundTag();
 
-            int count = entry.contains(KEY_COUNT)
-                    ? entry.getInt(KEY_COUNT)
-                    : 1;
+            List<HitOctant> octants = new ArrayList<>();
 
-            holder.addArrow(new StoredArrowStack(new StoredArrow(itemId, stackTag), count));
+            if (entry.contains(KEY_OCTANTS, Tag.TAG_LIST)) {
+                ListTag octantList = entry.getList(KEY_OCTANTS, Tag.TAG_INT);
+                for (int j = 0; j < octantList.size(); j++) {
+                    int ordinal = octantList.getInt(j);
+                    octants.add(HitOctant.byOrdinalSafe(ordinal));
+                }
+            }
+            // 舊存檔相容：如果還沒有 Octants，就退回 Count
+            else if (entry.contains(KEY_COUNT, Tag.TAG_INT)) {
+                int count = Math.max(0, entry.getInt(KEY_COUNT));
+                for (int j = 0; j < count; j++) {
+                    octants.add(HitOctant.EAST_UP_SOUTH);
+                }
+            }
+            else {
+                octants.add(HitOctant.EAST_UP_SOUTH);
+            }
+
+            holder.addArrow(new StoredArrowStack(new StoredArrow(itemId, stackTag), octants));
         }
     }
 }
