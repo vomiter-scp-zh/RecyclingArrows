@@ -1,6 +1,7 @@
 package com.vomiter.recyclingarrows.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.vomiter.recyclingarrows.RecyclingArrows;
 import com.vomiter.recyclingarrows.common.arrow.data.HitOctant;
 import com.vomiter.recyclingarrows.common.arrow.data.StoredArrow;
 import com.vomiter.recyclingarrows.common.arrow.data.StoredArrowStack;
@@ -16,6 +17,7 @@ import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.ArrowItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
@@ -27,6 +29,7 @@ public class RecyclingArrowLayer<T extends LivingEntity, M extends EntityModel<T
     private static final double LOOK_JITTER = 0.36D;
     private static final double MIN_DIR_LEN_SQR = 1.0E-6D;
 
+    private static final double MIN_Y_SIZE_FOR_VERTICAL_OFFSET = 1D;
     private final EntityRenderDispatcher entityRenderDispatcher;
 
     public RecyclingArrowLayer(RenderLayerParent<T, M> parent, EntityRenderDispatcher entityRenderDispatcher) {
@@ -98,20 +101,35 @@ public class RecyclingArrowLayer<T extends LivingEntity, M extends EntityModel<T
 
         RandomSource random = RandomSource.create(makeSeed(entity.getUUID(), storedArrow, globalIndex, stackIndex));
 
-        HitOctant renderOctant = mapRecordedOctantToRenderOctant(octant);
+        //HitOctant renderOctant = mapRecordedOctantToRenderOctant(octant);
+        HitOctant renderOctant = (octant);
         Vec3 offset = computeOctantOffset(entity, renderOctant, random);
-        Vec3 insertPos = entity.getBoundingBox().getCenter().add(offset);
+
+        AABB bb = entity.getBoundingBox();
+        Vec3 center = bb.getCenter();
+        if(entity.tickCount % 120 == 0)
+            RecyclingArrows.LOGGER
+                    .debug("[RA] Entity = {}, center = {}, ySize = {}", entity, center, bb.getYsize());
+
+        Vec3 insertPos = new Vec3(
+                center.x + offset.x,
+                center.y + offset.y,
+                center.z + offset.z
+        );
 
         Vec3 lookDir = computeArrowLookDirection(entity, insertPos, random);
         float yaw = vecToYaw(lookDir);
         float pitch = vecToPitch(lookDir);
 
+        if(entity.tickCount % 120 == 0)
+            RecyclingArrows.LOGGER
+                    .debug("[RA] Insert Pos = {}", insertPos);
         arrowEntity.setPos(insertPos);
         arrowEntity.tickCount = entity.tickCount;
-        arrowEntity.setYRot( - yaw);
-        arrowEntity.setXRot(-pitch);
-        arrowEntity.yRotO = - yaw;
-        arrowEntity.xRotO = -pitch;
+        arrowEntity.setYRot(-yaw);
+        arrowEntity.setXRot(pitch);
+        arrowEntity.yRotO = -yaw;
+        arrowEntity.xRotO = pitch;
 
         poseStack.pushPose();
         poseStack.translate(offset.x, offset.y, offset.z);
@@ -142,6 +160,11 @@ public class RecyclingArrowLayer<T extends LivingEntity, M extends EntityModel<T
         double jitterX = (random.nextDouble() - 0.5D) * box.getXsize() * 0.12D;
         double jitterY = (random.nextDouble() - 0.5D) * box.getYsize() * 0.12D;
         double jitterZ = (random.nextDouble() - 0.5D) * box.getZsize() * 0.12D;
+
+        if(box.getYsize() < MIN_Y_SIZE_FOR_VERTICAL_OFFSET){
+            baseY = 0.5;
+            jitterY = 0;
+        }
 
         return new Vec3(baseX + jitterX, baseY + jitterY, baseZ + jitterZ);
     }
