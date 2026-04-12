@@ -47,6 +47,7 @@ apply from: 'gradle/optional-dep.gradle'
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor("org.spongepowered:mixin:${mixin_version}:processor")
+    compileOnly fg.deobf("curse.maven:spartan-weaponry-278141:6842571")
 }
 
 //devRuntime.project(":common", true)

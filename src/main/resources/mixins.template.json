@@ -5,7 +5,10 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "AbstractArrowMixin",
-    "LivingEntityMixin"
+    "ArrowItemMixin",
+    "LivingEntityMixin",
+    "compat.SpartanBoltItemMixin",
+    "compat.SpartanBoltMixin"
   ],
   "client": [
   ],

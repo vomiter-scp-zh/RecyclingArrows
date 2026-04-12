@@ -5,6 +5,8 @@ import com.vomiter.recyclingarrows.RecyclingArrows;
 import com.vomiter.recyclingarrows.common.arrow.data.HitOctant;
 import com.vomiter.recyclingarrows.common.arrow.data.StoredArrow;
 import com.vomiter.recyclingarrows.common.arrow.data.StoredArrowStack;
+import com.vomiter.recyclingarrows.common.arrow.logic.IArrowAccessor;
+import com.vomiter.recyclingarrows.common.arrow.logic.IArrowItemAccessor;
 import com.vomiter.recyclingarrows.common.arrow.platform.EntityArrowStorageAccess;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -85,7 +87,7 @@ public class RecyclingArrowLayer<T extends LivingEntity, M extends EntityModel<T
                                    int globalIndex,
                                    int stackIndex) {
         Item item = ForgeRegistries.ITEMS.getValue(storedArrow.itemId());
-        if (!(item instanceof ArrowItem arrowItem)) {
+        if (!(item instanceof IArrowItemAccessor arrowItem)) {
             return;
         }
 
@@ -94,7 +96,7 @@ public class RecyclingArrowLayer<T extends LivingEntity, M extends EntityModel<T
             arrowStack.setTag(storedArrow.tag().copy());
         }
 
-        AbstractArrow arrowEntity = arrowItem.createArrow(entity.level(), arrowStack, entity);
+        AbstractArrow arrowEntity = arrowItem.recyclingarrows$getArrowEntity(entity.level(), arrowStack, entity);
         if (arrowEntity == null) {
             return;
         }
@@ -127,9 +129,9 @@ public class RecyclingArrowLayer<T extends LivingEntity, M extends EntityModel<T
         arrowEntity.setPos(insertPos);
         arrowEntity.tickCount = entity.tickCount;
         arrowEntity.setYRot(-yaw);
-        arrowEntity.setXRot(pitch);
+        arrowEntity.setXRot(-pitch);
         arrowEntity.yRotO = -yaw;
-        arrowEntity.xRotO = pitch;
+        arrowEntity.xRotO = -pitch;
 
         poseStack.pushPose();
         poseStack.translate(offset.x, offset.y, offset.z);

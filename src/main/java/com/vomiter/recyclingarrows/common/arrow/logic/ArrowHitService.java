@@ -6,6 +6,8 @@ import com.vomiter.recyclingarrows.common.arrow.data.IArrowRecordHolder;
 import com.vomiter.recyclingarrows.common.arrow.data.StoredArrow;
 import com.vomiter.recyclingarrows.common.arrow.data.StoredArrowStack;
 import com.vomiter.recyclingarrows.common.arrow.platform.IEntityArrowStorageAccess;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
@@ -23,6 +25,21 @@ public final class ArrowHitService {
 
     public ArrowHitService(IEntityArrowStorageAccess storageAccess) {
         this.storageAccess = storageAccess;
+    }
+
+    public static void addArrow(EntityHitResult hit, AbstractArrow arrow ,ItemStack pickUpItem){
+        Entity entity = hit.getEntity();
+        if(entity instanceof LivingEntity living){
+            if(living.isAlive()){
+                RecyclingArrows.ARROW_HIT_SERVICE.recordArrowHit(arrow, living, hit);
+                living.level().getEntitiesOfClass(ServerPlayer.class, living.getBoundingBox().inflate(64)).forEach(serverPlayer -> {
+                    RecyclingArrows.arrowSyncService.syncToPlayer(living, serverPlayer);
+                });
+            }
+            else{
+                living.spawnAtLocation(pickUpItem);
+            }
+        }
     }
 
     public void recordArrowHit(AbstractArrow arrow, LivingEntity target, EntityHitResult hit) {
