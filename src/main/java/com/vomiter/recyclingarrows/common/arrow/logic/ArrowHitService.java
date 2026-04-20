@@ -1,6 +1,7 @@
 package com.vomiter.recyclingarrows.common.arrow.logic;
 
 import com.vomiter.recyclingarrows.RecyclingArrows;
+import com.vomiter.recyclingarrows.common.arrow.data.ArrowDropDataManager;
 import com.vomiter.recyclingarrows.common.arrow.data.HitOctant;
 import com.vomiter.recyclingarrows.common.arrow.data.IArrowRecordHolder;
 import com.vomiter.recyclingarrows.common.arrow.data.StoredArrow;
@@ -27,17 +28,28 @@ public final class ArrowHitService {
         this.storageAccess = storageAccess;
     }
 
-    public static void addArrow(EntityHitResult hit, AbstractArrow arrow ,ItemStack pickUpItem){
+    public static void addArrow(EntityHitResult hit, AbstractArrow arrow, ItemStack pickUpItem) {
         Entity entity = hit.getEntity();
-        if(entity instanceof LivingEntity living){
-            if(living.isAlive()){
+        if (entity instanceof LivingEntity living) {
+            if (living.isAlive()) {
                 RecyclingArrows.ARROW_HIT_SERVICE.recordArrowHit(arrow, living, hit);
                 living.level().getEntitiesOfClass(ServerPlayer.class, living.getBoundingBox().inflate(64)).forEach(serverPlayer -> {
                     RecyclingArrows.arrowSyncService.syncToPlayer(living, serverPlayer);
                 });
-            }
-            else{
-                living.spawnAtLocation(pickUpItem);
+            } else {
+                StoredArrow storedArrow = ArrowItemResolver.resolve(pickUpItem);
+
+                if (storedArrow == null) {
+                    living.spawnAtLocation(pickUpItem);
+                    return;
+                }
+
+                List<ItemStack> drops = ArrowDropDataManager.INSTANCE.resolveDrops(storedArrow, living.getRandom());
+                for (ItemStack stack : drops) {
+                    if (!stack.isEmpty()) {
+                        living.spawnAtLocation(stack);
+                    }
+                }
             }
         }
     }
@@ -49,18 +61,14 @@ public final class ArrowHitService {
 
         StoredArrow stored = ArrowItemResolver.resolve(arrow);
         RecyclingArrows.LOGGER.debug("resolved arrow = {}", stored);
-
         if (stored == null) {
             return;
         }
 
         HitOctant octant = resolveOctant(target.getBoundingBox(), arrow);
-        RecyclingArrows.LOGGER.info(
+        RecyclingArrows.LOGGER.debug(
                 "resolved octant = {}, arrowPos = {}, arrowMotion = {}, targetCenter = {}",
-                octant,
-                arrow.position(),
-                arrow.getDeltaMovement(),
-                target.getBoundingBox().getCenter()
+                octant, arrow.position(), arrow.getDeltaMovement(), target.getBoundingBox().getCenter()
         );
 
         IArrowRecordHolder holder = storageAccess.get(target);
@@ -92,9 +100,6 @@ public final class ArrowHitService {
 
         if (motion.lengthSqr() > MOTION_EPSILON) {
             Vec3 dir = motion.normalize();
-
-            // 這裡判斷的是「受擊側」，不是箭目前朝向哪裡
-            // 箭朝 +X 飛，表示它是從 WEST 打進來，所以 east = false
             east = dir.x < 0.0D;
             up = dir.y < 0.0D;
             south = dir.z < 0.0D;
@@ -109,7 +114,6 @@ public final class ArrowHitService {
     }
 
     private static boolean sameArrow(StoredArrow a, StoredArrow b) {
-        return Objects.equals(a.itemId(), b.itemId())
-                && Objects.equals(a.tag(), b.tag());
+        return Objects.equals(a.itemId(), b.itemId()) && Objects.equals(a.tag(), b.tag());
     }
 }

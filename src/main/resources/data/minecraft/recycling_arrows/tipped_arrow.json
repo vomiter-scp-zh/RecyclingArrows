@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "weight": 1,
+      "items": [
+        { "item": "minecraft:tipped_arrow", "function": "copy_data" }
+      ]
+    },
+    {
+      "weight": 1,
+      "results": "minecraft:arrow"
+    }
+  ]
+}

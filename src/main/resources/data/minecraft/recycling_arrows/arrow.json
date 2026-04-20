@@ -1,0 +1,22 @@
+{
+  "results": [
+    {
+      "weight": 1,
+      "items": [
+        "minecraft:arrow"
+      ]
+    },
+    {
+      "weight": 3,
+      "items": [
+        { "item": "minecraft:feather", "chance": 0.35 },
+        "minecraft:stick",
+        "minecraft:flint"
+      ]
+    },
+    {
+      "weight": 1,
+      "items": []
+    }
+  ]
+}

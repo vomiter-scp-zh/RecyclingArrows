@@ -18,34 +18,38 @@ public final class ArrowItemResolver {
             return null;
         }
 
-        ItemStack pickup = ((IArrowAccessor)arrow).recyclingarrows$getItem();
-        if (pickup == null) return null;
-        if (pickup.isEmpty()) {
+        ItemStack pickup = ((IArrowAccessor) arrow).recyclingarrows$getItem();
+        return resolve(pickup);
+    }
+
+    public static StoredArrow resolve(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
             return null;
         }
 
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(pickup.getItem());
+        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(stack.getItem());
         if (itemId == null) {
             return null;
         }
 
-        CompoundTag tag = pickup.getTag() == null ? new CompoundTag() : pickup.getTag().copy();
+        CompoundTag tag = stack.getTag() == null ? new CompoundTag() : stack.getTag().copy();
         return new StoredArrow(itemId, tag);
     }
 
-    public static ItemStack build(StoredArrowStack storedArrowStack){
+    public static ItemStack build(StoredArrowStack storedArrowStack) {
         return build(storedArrowStack.getArrow()).copyWithCount(storedArrowStack.getCount());
     }
 
-
-    public static ItemStack build(StoredArrow storedArrow){
+    public static ItemStack build(StoredArrow storedArrow) {
         var item = BuiltInRegistries.ITEM.get(storedArrow.itemId());
         var stack = new ItemStack(item);
         var tag = storedArrow.tag();
-        if(!tag.isEmpty()){
+
+        if (!tag.isEmpty()) {
             stack.getOrCreateTag();
             stack.setTag(tag);
         }
+
         return stack;
     }
 }
