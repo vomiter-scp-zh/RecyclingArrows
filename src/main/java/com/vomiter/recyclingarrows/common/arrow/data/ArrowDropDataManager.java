@@ -1,6 +1,7 @@
 package com.vomiter.recyclingarrows.common.arrow.data;
 
 import com.google.gson.*;
+import com.vomiter.recyclingarrows.Config;
 import com.vomiter.recyclingarrows.RecyclingArrows;
 import com.vomiter.recyclingarrows.common.arrow.logic.ArrowItemResolver;
 import net.minecraft.nbt.CompoundTag;
@@ -55,14 +56,13 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
         RecyclingArrows.LOGGER.info("Loaded {} recycling_arrows definitions", this.definitions.size());
     }
 
-    /**
-     * 對外主入口：
-     * - 若有對應 datapack，就依 weight 抽一個 pool，再產生掉落物
-     * - 若沒有對應 datapack，就 fallback 成原本箭矢解析結果
-     */
     public List<ItemStack> resolveDrops(StoredArrow storedArrow, RandomSource random) {
         if (storedArrow == null) {
             return List.of();
+        }
+
+        if (!Config.enableDatapackDrops()) {
+            return fallbackOriginal(storedArrow);
         }
 
         if (random == null) {
