@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 
 public final class ArrowRecordHolder implements IArrowRecordHolder {
+
     private final List<StoredArrowStack> arrows = new ArrayList<>();
 
     @Override
@@ -23,6 +24,51 @@ public final class ArrowRecordHolder implements IArrowRecordHolder {
         }
 
         arrows.add(new StoredArrowStack(arrow.getArrow(), arrow.getOctants()));
+    }
+
+    @Override
+    public StoredArrow removeArrow() {
+        if (arrows.isEmpty()) {
+            return null;
+        }
+
+        StoredArrowStack stack = arrows.get(arrows.size() - 1);
+        StoredArrow removed = stack.getArrow().copy();
+
+        stack.removeArrow();
+
+        if (stack.getCount() <= 0) {
+            arrows.remove(arrows.size() - 1);
+        }
+
+        return removed;
+    }
+
+    @Override
+    public StoredArrow removeArrow(StoredArrow arrow) {
+        if (arrow == null) {
+            return null;
+        }
+
+        for (int i = arrows.size() - 1; i >= 0; i--) {
+            StoredArrowStack stack = arrows.get(i);
+
+            if (!canStack(stack.getArrow(), arrow)) {
+                continue;
+            }
+
+            StoredArrow removed = stack.getArrow().copy();
+
+            stack.removeArrow();
+
+            if (stack.getCount() <= 0) {
+                arrows.remove(i);
+            }
+
+            return removed;
+        }
+
+        return null;
     }
 
     @Override

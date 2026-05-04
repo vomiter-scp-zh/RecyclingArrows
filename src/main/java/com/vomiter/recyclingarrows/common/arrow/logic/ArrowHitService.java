@@ -16,6 +16,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -33,9 +34,7 @@ public final class ArrowHitService {
         if (entity instanceof LivingEntity living) {
             if (living.isAlive()) {
                 RecyclingArrows.ARROW_HIT_SERVICE.recordArrowHit(arrow, living, hit);
-                living.level().getEntitiesOfClass(ServerPlayer.class, living.getBoundingBox().inflate(64)).forEach(serverPlayer -> {
-                    RecyclingArrows.arrowSyncService.syncToPlayer(living, serverPlayer);
-                });
+                syncArrowStorage(living);
             } else {
                 StoredArrow storedArrow = ArrowItemResolver.resolve(pickUpItem);
 
@@ -84,10 +83,18 @@ public final class ArrowHitService {
         holder.addArrow(new StoredArrowStack(stored, java.util.List.of(octant)));
     }
 
-    public List<ItemStack> getArrows(LivingEntity target) {
-        return storageAccess.get(target).getArrows().stream()
-                .map(ArrowItemResolver::build)
-                .toList();
+    public List<ItemStack> getArrowDrops(LivingEntity target) {
+        var stacks = storageAccess.get(target).getArrows().stream();
+        List<ItemStack> list = new ArrayList<>();
+        stacks.forEach(
+                stack -> {
+                    for (int i = 0; i < stack.getCount(); i++) {
+                        List<ItemStack> drops = ArrowDropDataManager.INSTANCE.resolveDrops(stack.getArrow(), target.getRandom());
+                        list.addAll(drops);
+                    }
+                }
+        );
+        return compact(list);
     }
 
     private static HitOctant resolveOctant(AABB box, AbstractArrow arrow) {
@@ -115,5 +122,91 @@ public final class ArrowHitService {
 
     private static boolean sameArrow(StoredArrow a, StoredArrow b) {
         return Objects.equals(a.itemId(), b.itemId()) && Objects.equals(a.tag(), b.tag());
+    }
+
+    public StoredArrow removeArrow(LivingEntity target) {
+        if (target == null) {
+            return null;
+        }
+
+        StoredArrow removed = storageAccess.get(target).removeArrow();
+
+        if (removed != null) {
+            syncArrowStorage(target);
+        }
+
+        return removed;
+    }
+
+    public StoredArrow removeArrow(LivingEntity target, StoredArrow arrow) {
+        if (target == null || arrow == null) {
+            return null;
+        }
+
+        StoredArrow removed = storageAccess.get(target).removeArrow(arrow);
+
+        if (removed != null) {
+            syncArrowStorage(target);
+        }
+
+        return removed;
+    }
+
+    public StoredArrow removeArrow(LivingEntity target, ItemStack arrowStack) {
+        if (target == null || arrowStack == null || arrowStack.isEmpty()) {
+            return null;
+        }
+
+        StoredArrow arrow = ArrowItemResolver.resolve(arrowStack);
+
+        if (arrow == null) {
+            return null;
+        }
+
+        return removeArrow(target, arrow);
+    }
+
+    private static void syncArrowStorage(LivingEntity target) {
+        target.level()
+                .getEntitiesOfClass(ServerPlayer.class, target.getBoundingBox().inflate(64))
+                .forEach(serverPlayer -> RecyclingArrows.arrowSyncService.syncToPlayer(target, serverPlayer));
+    }
+
+    public static List<ItemStack> compact(List<ItemStack> input) {
+        List<ItemStack> result = new ArrayList<>();
+
+        for (ItemStack stack : input) {
+            if (stack.isEmpty()) continue;
+
+            ItemStack remaining = stack.copy();
+
+            // 嘗試合併到已存在的 stack
+            for (ItemStack existing : result) {
+                if (ItemStack.isSameItemSameTags(existing, remaining)) {
+                    int transferable = Math.min(
+                            existing.getMaxStackSize() - existing.getCount(),
+                            remaining.getCount()
+                    );
+
+                    if (transferable > 0) {
+                        existing.grow(transferable);
+                        remaining.shrink(transferable);
+
+                        if (remaining.isEmpty()) break;
+                    }
+                }
+            }
+
+            // 如果還有剩，建立新 stack（可能需要切多份）
+            while (!remaining.isEmpty()) {
+                int split = Math.min(remaining.getMaxStackSize(), remaining.getCount());
+                ItemStack newStack = remaining.copy();
+                newStack.setCount(split);
+                result.add(newStack);
+                remaining.shrink(split);
+            }
+        }
+
+        return result;
     }
 }

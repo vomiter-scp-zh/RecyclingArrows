@@ -15,7 +15,7 @@ public class LivingEntityMixin {
         var self = (LivingEntity)(Object)this;
         RecyclingArrows
                 .ARROW_HIT_SERVICE
-                .getArrows(self)
+                .getArrowDrops(self)
                 .forEach(self::spawnAtLocation);
     }
 }
