@@ -64,7 +64,7 @@ public final class ArrowHitService {
             return;
         }
 
-        HitOctant octant = resolveOctant(target.getBoundingBox(), arrow);
+        HitOctant octant = resolveOctant(target, arrow);
         RecyclingArrows.LOGGER.debug(
                 "resolved octant = {}, arrowPos = {}, arrowMotion = {}, targetCenter = {}",
                 octant, arrow.position(), arrow.getDeltaMovement(), target.getBoundingBox().getCenter()
@@ -97,7 +97,8 @@ public final class ArrowHitService {
         return compact(list);
     }
 
-    private static HitOctant resolveOctant(AABB box, AbstractArrow arrow) {
+    private static HitOctant resolveOctant(LivingEntity target, AbstractArrow arrow) {
+        AABB box = target.getBoundingBox();
         Vec3 center = box.getCenter();
         Vec3 motion = arrow.getDeltaMovement();
 
@@ -107,17 +108,33 @@ public final class ArrowHitService {
 
         if (motion.lengthSqr() > MOTION_EPSILON) {
             Vec3 dir = motion.normalize();
-            east = dir.x < 0.0D;
-            up = dir.y < 0.0D;
-            south = dir.z < 0.0D;
+            Vec3 localDir = toEntityLocalHorizontal(dir, target.yBodyRot);
+
+            east = localDir.x < 0.0D;
+            up = localDir.y < 0.0D;
+            south = localDir.z > 0.0D;
         } else {
             Vec3 pos = arrow.position();
-            east = pos.x > center.x;
-            up = pos.y > center.y;
-            south = pos.z > center.z;
+            Vec3 offset = pos.subtract(center);
+            Vec3 localOffset = toEntityLocalHorizontal(offset, target.yBodyRot);
+
+            east = localOffset.x > 0.0D;
+            up = localOffset.y > 0.0D;
+            south = localOffset.z < 0.0D;
         }
 
         return HitOctant.fromSigns(east, up, south);
+    }
+
+    private static Vec3 toEntityLocalHorizontal(Vec3 world, float bodyYawDegrees) {
+        double yaw = Math.toRadians(bodyYawDegrees);
+        double cos = Math.cos(yaw);
+        double sin = Math.sin(yaw);
+
+        double localX = world.x * cos + world.z * sin;
+        double localZ = -world.x * sin + world.z * cos;
+
+        return new Vec3(localX, world.y, localZ);
     }
 
     private static boolean sameArrow(StoredArrow a, StoredArrow b) {
