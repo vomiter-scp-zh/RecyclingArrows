@@ -138,7 +138,7 @@ public final class ArrowHitService {
     }
 
     private static boolean sameArrow(StoredArrow a, StoredArrow b) {
-        return Objects.equals(a.itemId(), b.itemId()) && Objects.equals(a.tag(), b.tag());
+        return ItemStack.isSameItemSameComponents(a.stack(), b.stack());
     }
 
     public StoredArrow removeArrow(LivingEntity target) {
@@ -199,7 +199,7 @@ public final class ArrowHitService {
 
             // 嘗試合併到已存在的 stack
             for (ItemStack existing : result) {
-                if (ItemStack.isSameItemSameTags(existing, remaining)) {
+                if (ItemStack.isSameItemSameComponents(existing, remaining)) {
                     int transferable = Math.min(
                             existing.getMaxStackSize() - existing.getCount(),
                             remaining.getCount()

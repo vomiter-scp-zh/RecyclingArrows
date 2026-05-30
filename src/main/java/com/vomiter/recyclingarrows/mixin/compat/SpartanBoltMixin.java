@@ -1,5 +1,6 @@
 package com.vomiter.recyclingarrows.mixin.compat;
 
+/*
 import com.oblivioussp.spartanweaponry.entity.projectile.BoltEntity;
 import com.vomiter.recyclingarrows.common.arrow.logic.ArrowHitService;
 import com.vomiter.recyclingarrows.common.arrow.logic.IArrowAccessor;
@@ -40,3 +41,6 @@ public abstract class SpartanBoltMixin implements IArrowAccessor {
 
 
 }
+
+
+ */

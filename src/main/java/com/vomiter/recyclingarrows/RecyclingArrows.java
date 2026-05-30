@@ -2,19 +2,18 @@ package com.vomiter.recyclingarrows;
 
 import com.mojang.logging.LogUtils;
 import com.vomiter.recyclingarrows.common.arrow.logic.ArrowHitService;
-import com.vomiter.recyclingarrows.common.arrow.platform.ForgeEntityArrowStorageAccess;
+import com.vomiter.recyclingarrows.common.arrow.platform.EntityArrowStorageAccess;
+import com.vomiter.recyclingarrows.common.arrow.platform.RADataAttachments;
 import com.vomiter.recyclingarrows.common.event.EventHandler;
 import com.vomiter.recyclingarrows.common.network.ArrowSyncService;
-import com.vomiter.recyclingarrows.common.network.ForgeArrowNetworkBridge;
-import com.vomiter.recyclingarrows.common.network.ForgeNetworkRegistrar;
-import com.vomiter.recyclingarrows.common.registry.ModRegistries;
-import com.vomiter.recyclingarrows.data.ModDataGenerator;
+import com.vomiter.recyclingarrows.common.network.NeoForgeArrowNetworkBridge;
+import com.vomiter.recyclingarrows.common.network.NeoForgeNetworkRegistrar;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.slf4j.Logger;
 
 @Mod(RecyclingArrows.MOD_ID)
@@ -30,18 +29,16 @@ public class RecyclingArrows
     }
 
     public static final ArrowHitService ARROW_HIT_SERVICE =
-            new ArrowHitService(new ForgeEntityArrowStorageAccess());
+            new ArrowHitService(new EntityArrowStorageAccess());
 
 
-    public RecyclingArrows(FMLJavaModLoadingContext context) {
+    public RecyclingArrows(ModContainer mod, IEventBus modBus) {
         EventHandler.init();
-        IEventBus modBus = context.getModEventBus();
         modBus.addListener(this::commonSetup);
-        modBus.addListener(ModDataGenerator::generateData);
-        ModRegistries.register(modBus);
-        context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
-        ForgeNetworkRegistrar.register();
-        arrowSyncService = new ArrowSyncService(new ForgeArrowNetworkBridge());
+        mod.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        RADataAttachments.register(modBus);
+        modBus.addListener(NeoForgeNetworkRegistrar::registerPayloads);
+        arrowSyncService = new ArrowSyncService(new NeoForgeArrowNetworkBridge());
 
     }
 

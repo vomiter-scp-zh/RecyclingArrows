@@ -1,6 +1,6 @@
 package com.vomiter.recyclingarrows.common.arrow.data;
 
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -85,10 +85,6 @@ public final class ArrowRecordHolder implements IArrowRecordHolder {
         if (!a.itemId().equals(b.itemId())) {
             return false;
         }
-
-        CompoundTag ta = a.tag() == null ? new CompoundTag() : a.tag();
-        CompoundTag tb = b.tag() == null ? new CompoundTag() : b.tag();
-
-        return ta.equals(tb);
+        return ItemStack.isSameItemSameComponents(a.stack(), b.stack());
     }
 }

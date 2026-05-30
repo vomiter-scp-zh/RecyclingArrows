@@ -1,6 +1,5 @@
 package com.vomiter.recyclingarrows.common.network;
 
-import com.vomiter.recyclingarrows.common.network.SyncEntityArrowStorageMsg;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 

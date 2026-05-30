@@ -1,5 +1,6 @@
 package com.vomiter.recyclingarrows.mixin.compat;
 
+/*
 import com.oblivioussp.spartanweaponry.entity.projectile.BoltEntity;
 import com.oblivioussp.spartanweaponry.item.BoltItem;
 import com.vomiter.recyclingarrows.common.arrow.logic.IArrowItemAccessor;
@@ -20,3 +21,6 @@ public abstract class SpartanBoltItemMixin implements IArrowItemAccessor {
         return createBolt(level, stack, owner);
     }
 }
+
+
+ */

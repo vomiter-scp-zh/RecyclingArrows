@@ -1,19 +1,19 @@
 package com.vomiter.recyclingarrows;
 
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
-@Mod.EventBusSubscriber(modid = RecyclingArrows.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = RecyclingArrows.MOD_ID)
 public class Config {
-    private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
+    private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
-    public static final ForgeConfigSpec.BooleanValue ENABLE_DATAPACK_DROPS = BUILDER
+    public static final ModConfigSpec.BooleanValue ENABLE_DATAPACK_DROPS = BUILDER
             .comment("If false, disable recycling_arrows datapack drop override system and always fallback to original resolved arrow item.")
             .define("enableDatapackDrops", true);
 
-    static final ForgeConfigSpec SPEC = BUILDER.build();
+    static final ModConfigSpec SPEC = BUILDER.build();
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {

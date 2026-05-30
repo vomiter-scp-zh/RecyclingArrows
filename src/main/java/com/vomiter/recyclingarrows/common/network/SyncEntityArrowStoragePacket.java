@@ -1,38 +1,33 @@
 package com.vomiter.recyclingarrows.common.network;
 
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import com.vomiter.recyclingarrows.RecyclingArrows;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Supplier;
+public record SyncEntityArrowStoragePacket(SyncEntityArrowStorageMsg msg) implements CustomPacketPayload {
 
-public final class SyncEntityArrowStoragePacket {
-    private final SyncEntityArrowStorageMsg msg;
+    public static final Type<SyncEntityArrowStoragePacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(RecyclingArrows.MOD_ID, "sync_entity_arrow_storage"));
 
-    public SyncEntityArrowStoragePacket(SyncEntityArrowStorageMsg msg) {
-        this.msg = msg;
-    }
+    public static final StreamCodec<RegistryFriendlyByteBuf, SyncEntityArrowStoragePacket> STREAM_CODEC =
+            StreamCodec.of(
+                    SyncEntityArrowStoragePacket::encode,
+                    SyncEntityArrowStoragePacket::decode
+            );
 
-    public SyncEntityArrowStorageMsg msg() {
-        return msg;
-    }
-
-    public static void encode(SyncEntityArrowStoragePacket packet, FriendlyByteBuf buf) {
+    private static void encode(RegistryFriendlyByteBuf buf, SyncEntityArrowStoragePacket packet) {
         SyncEntityArrowStorageMsgCodec.encode(buf, packet.msg);
     }
 
-    public static SyncEntityArrowStoragePacket decode(FriendlyByteBuf buf) {
+    private static SyncEntityArrowStoragePacket decode(RegistryFriendlyByteBuf buf) {
         return new SyncEntityArrowStoragePacket(SyncEntityArrowStorageMsgCodec.decode(buf));
     }
 
-    public static void handle(SyncEntityArrowStoragePacket packet, Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() ->
-                DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
-                        SyncEntityArrowStorageHandler.handleClient(packet.msg)
-                )
-        );
-        ctx.setPacketHandled(true);
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

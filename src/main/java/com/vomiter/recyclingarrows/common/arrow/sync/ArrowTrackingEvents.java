@@ -4,11 +4,11 @@ import com.vomiter.recyclingarrows.RecyclingArrows;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
-@Mod.EventBusSubscriber(modid = RecyclingArrows.MOD_ID)
+@EventBusSubscriber(modid = RecyclingArrows.MOD_ID)
 public final class ArrowTrackingEvents {
     private ArrowTrackingEvents() {
     }

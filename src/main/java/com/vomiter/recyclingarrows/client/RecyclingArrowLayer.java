@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
@@ -21,7 +22,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -86,15 +86,12 @@ public class RecyclingArrowLayer<T extends LivingEntity, M extends EntityModel<T
                                    HitOctant octant,
                                    int globalIndex,
                                    int stackIndex) {
-        Item item = ForgeRegistries.ITEMS.getValue(storedArrow.itemId());
+        Item item = storedArrow.stack().getItem();
         if (!(item instanceof IArrowItemAccessor arrowItem)) {
             return;
         }
 
-        ItemStack arrowStack = new ItemStack(item);
-        if (storedArrow.tag() != null) {
-            arrowStack.setTag(storedArrow.tag().copy());
-        }
+        ItemStack arrowStack = storedArrow.stack().copy();
 
         AbstractArrow arrowEntity = arrowItem.recyclingarrows$getArrowEntity(entity.level(), arrowStack, entity);
         if (arrowEntity == null) {
@@ -205,7 +202,7 @@ public class RecyclingArrowLayer<T extends LivingEntity, M extends EntityModel<T
     private long makeSeed(UUID uuid, StoredArrow arrow, int globalIndex, int stackIndex) {
         long seed = uuid.getMostSignificantBits() ^ uuid.getLeastSignificantBits();
         seed = 31L * seed + arrow.itemId().hashCode();
-        seed = 31L * seed + (arrow.tag() == null ? 0 : arrow.tag().hashCode());
+        seed = 31L * seed + (arrow.stack().hashCode());
         seed = 31L * seed + globalIndex;
         seed = 31L * seed + stackIndex;
         return seed;

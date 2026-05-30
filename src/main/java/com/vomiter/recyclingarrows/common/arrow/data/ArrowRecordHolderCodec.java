@@ -1,5 +1,6 @@
 package com.vomiter.recyclingarrows.common.arrow.data;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
@@ -12,24 +13,21 @@ import java.util.List;
 public final class ArrowRecordHolderCodec {
     private static final String KEY_ARROWS = "Arrows";
     private static final String KEY_ITEM = "Item";
-    private static final String KEY_TAG = "Tag";
+    private static final String KEY_STACK = "Stack";
     private static final String KEY_OCTANTS = "Octants";
-
-    // 可選：保留舊版相容
     private static final String KEY_COUNT = "Count";
 
     private ArrowRecordHolderCodec() {
     }
 
-    public static CompoundTag save(IArrowRecordHolder holder) {
+    public static CompoundTag save(IArrowRecordHolder holder, HolderLookup.Provider registries) {
         CompoundTag out = new CompoundTag();
         ListTag list = new ListTag();
 
         for (StoredArrowStack arrow : holder.getArrows()) {
             CompoundTag entry = new CompoundTag();
             entry.putString(KEY_ITEM, arrow.getArrow().itemId().toString());
-            entry.put(KEY_TAG, arrow.getArrow().tag() == null ? new CompoundTag() : arrow.getArrow().tag().copy());
-
+            entry.put(KEY_STACK, arrow.getArrow().save(registries));
             ListTag octants = new ListTag();
             for (HitOctant octant : arrow.getOctants()) {
                 octants.add(IntTag.valueOf(octant.ordinal()));
@@ -43,7 +41,7 @@ public final class ArrowRecordHolderCodec {
         return out;
     }
 
-    public static void load(IArrowRecordHolder holder, CompoundTag tag) {
+    public static void load(IArrowRecordHolder holder, CompoundTag tag, HolderLookup.Provider registries) {
         holder.clear();
 
         if (tag == null || !tag.contains(KEY_ARROWS, Tag.TAG_LIST)) {
@@ -62,10 +60,6 @@ public final class ArrowRecordHolderCodec {
             if (itemId == null) {
                 continue;
             }
-
-            CompoundTag stackTag = entry.contains(KEY_TAG, Tag.TAG_COMPOUND)
-                    ? entry.getCompound(KEY_TAG).copy()
-                    : new CompoundTag();
 
             List<HitOctant> octants = new ArrayList<>();
 
@@ -87,7 +81,7 @@ public final class ArrowRecordHolderCodec {
                 octants.add(HitOctant.EAST_UP_SOUTH);
             }
 
-            holder.addArrow(new StoredArrowStack(new StoredArrow(itemId, stackTag), octants));
+            holder.addArrow(new StoredArrowStack(StoredArrow.load(entry.getCompound(KEY_STACK), registries), octants));
         }
     }
 }

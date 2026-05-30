@@ -3,8 +3,7 @@ package com.vomiter.recyclingarrows.common.arrow.data;
 import com.google.gson.*;
 import com.vomiter.recyclingarrows.Config;
 import com.vomiter.recyclingarrows.RecyclingArrows;
-import com.vomiter.recyclingarrows.common.arrow.logic.ArrowItemResolver;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
@@ -13,7 +12,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -33,7 +31,11 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
     public static final ArrowDropDataManager INSTANCE = new ArrowDropDataManager();
 
     @Override
-    protected void apply(Map<ResourceLocation, JsonElement> objectMap, @NotNull ResourceManager resourceManager, @NotNull ProfilerFiller profiler) {
+    protected void apply(
+            Map<ResourceLocation, JsonElement> objectMap,
+            @NotNull ResourceManager resourceManager,
+            @NotNull ProfilerFiller profiler
+    ) {
         Map<ResourceLocation, ArrowDropDefinition> parsed = new HashMap<>();
 
         for (Map.Entry<ResourceLocation, JsonElement> entry : objectMap.entrySet()) {
@@ -41,7 +43,10 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
 
             try {
                 if (!entry.getValue().isJsonObject()) {
-                    RecyclingArrows.LOGGER.warn("Skipping recycling_arrows entry {} because root is not an object", arrowId);
+                    RecyclingArrows.LOGGER.warn(
+                            "Skipping recycling_arrows entry {} because root is not an object",
+                            arrowId
+                    );
                     continue;
                 }
 
@@ -57,7 +62,7 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
     }
 
     public List<ItemStack> resolveDrops(StoredArrow storedArrow, RandomSource random) {
-        if (storedArrow == null) {
+        if (storedArrow == null || storedArrow.isEmpty()) {
             return List.of();
         }
 
@@ -72,18 +77,25 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
         return resolveDropsInternal(storedArrow, random, new HashSet<>());
     }
 
-    private List<ItemStack> resolveDropsInternal(StoredArrow storedArrow, RandomSource random, Set<ResourceLocation> visiting) {
+    private List<ItemStack> resolveDropsInternal(
+            StoredArrow storedArrow,
+            RandomSource random,
+            Set<ResourceLocation> visiting
+    ) {
         ResourceLocation arrowId = storedArrow.itemId();
         ArrowDropDefinition definition = definitions.get(arrowId);
 
-        // 沒有任何 datapack 定義 -> fallback 原本解析結果
+        // 沒有任何 datapack 定義 -> fallback 原本箭矢 ItemStack
         if (definition == null) {
             return fallbackOriginal(storedArrow);
         }
 
         // 防止 A -> B -> A 這種循環參照
         if (!visiting.add(arrowId)) {
-            RecyclingArrows.LOGGER.warn("Detected cyclic recycling_arrows reference at {}, fallback to original result", arrowId);
+            RecyclingArrows.LOGGER.warn(
+                    "Detected cyclic recycling_arrows reference at {}, fallback to original result",
+                    arrowId
+            );
             return fallbackOriginal(storedArrow);
         }
 
@@ -93,13 +105,13 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
                 return List.of();
             }
 
-            // 參照另一個箭種的結果
+            // 參照另一個箭種的結果：
+            // 這裡不再 copy tag，而是把原本 stack 的 components 複製到新的 item 上。
             if (chosen.reference() != null) {
-                StoredArrow referenced = new StoredArrow(chosen.reference(), copyTagOrEmpty(storedArrow.tag()));
+                StoredArrow referenced = storedArrow.copyAs(chosen.reference());
                 return resolveDropsInternal(referenced, random, visiting);
             }
 
-            // items additive 掉落
             List<ItemStack> result = new ArrayList<>();
             for (ArrowDropEntry entry : chosen.entries()) {
                 if (entry.chance() < 1.0F && random.nextFloat() > entry.chance()) {
@@ -119,25 +131,20 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
     }
 
     private static ItemStack buildEntry(ArrowDropEntry entry, StoredArrow sourceArrow) {
-        Item item = ForgeRegistries.ITEMS.getValue(entry.itemId());
+        Item item = BuiltInRegistries.ITEM.get(entry.itemId());
         if (item == null) {
             return ItemStack.EMPTY;
         }
 
-        ItemStack stack = new ItemStack(item);
-
         if (entry.copyData()) {
-            CompoundTag sourceTag = sourceArrow.tag();
-            if (sourceTag != null && !sourceTag.isEmpty()) {
-                stack.setTag(sourceTag.copy());
-            }
+            return sourceArrow.copyAsStack(entry.itemId());
         }
 
-        return stack;
+        return new ItemStack(item);
     }
 
     private static List<ItemStack> fallbackOriginal(StoredArrow storedArrow) {
-        ItemStack original = ArrowItemResolver.build(storedArrow);
+        ItemStack original = storedArrow.stack().copy();
         if (original.isEmpty()) {
             return List.of();
         }
@@ -189,10 +196,6 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
             JsonObject poolObj = element.getAsJsonObject();
             int weight = GsonHelper.getAsInt(poolObj, "weight", 1);
 
-            // 支援：
-            // 1) "items": [...]
-            // 2) "results": "minecraft:arrow"  (你範例使用這個)
-            // 3) "result": "minecraft:arrow"   (順手容錯)
             ResourceLocation reference = null;
             List<ArrowDropEntry> entries = List.of();
 
@@ -203,7 +206,9 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
             } else if (poolObj.has("result") && poolObj.get("result").isJsonPrimitive()) {
                 reference = parseResourceLocation(poolObj.get("result").getAsString(), "result reference", arrowId);
             } else {
-                throw new IllegalArgumentException("Pool must contain either 'items' array or string 'results'/'result' reference: " + arrowId);
+                throw new IllegalArgumentException(
+                        "Pool must contain either 'items' array or string 'results'/'result' reference: " + arrowId
+                );
             }
 
             pools.add(new ArrowDropPool(weight, entries, reference));
@@ -249,14 +254,12 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
     private static ResourceLocation parseResourceLocation(String raw, String fieldName, ResourceLocation context) {
         ResourceLocation id = ResourceLocation.tryParse(raw);
         if (id == null) {
-            throw new IllegalArgumentException("Invalid ResourceLocation in field '" + fieldName + "': " + raw
-                    + (context != null ? " (from " + context + ")" : ""));
+            throw new IllegalArgumentException(
+                    "Invalid ResourceLocation in field '" + fieldName + "': " + raw
+                            + (context != null ? " (from " + context + ")" : "")
+            );
         }
         return id;
-    }
-
-    private static CompoundTag copyTagOrEmpty(CompoundTag tag) {
-        return tag == null ? new CompoundTag() : tag.copy();
     }
 
     public boolean hasDefinition(ResourceLocation arrowId) {

@@ -3,8 +3,6 @@ package com.vomiter.recyclingarrows.common.network;
 import com.vomiter.recyclingarrows.common.arrow.data.ArrowRecordHolderCodec;
 import com.vomiter.recyclingarrows.common.arrow.data.IArrowRecordHolder;
 import com.vomiter.recyclingarrows.common.arrow.platform.EntityArrowStorageAccess;
-import com.vomiter.recyclingarrows.common.network.SyncEntityArrowStorageMsg;
-import com.vomiter.recyclingarrows.common.network.IArrowNetworkBridge;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -22,7 +20,7 @@ public final class ArrowSyncService {
         }
 
         IArrowRecordHolder holder = EntityArrowStorageAccess.getOrThrow(entity);
-        CompoundTag tag = ArrowRecordHolderCodec.save(holder);
+        CompoundTag tag = ArrowRecordHolderCodec.save(holder, entity.registryAccess());
         SyncEntityArrowStorageMsg msg = new SyncEntityArrowStorageMsg(entity.getId(), tag);
         network.sendArrowSyncToTracking(entity, msg);
     }
@@ -33,7 +31,7 @@ public final class ArrowSyncService {
         }
 
         IArrowRecordHolder holder = EntityArrowStorageAccess.getOrThrow(entity);
-        CompoundTag tag = ArrowRecordHolderCodec.save(holder);
+        CompoundTag tag = ArrowRecordHolderCodec.save(holder, player.registryAccess());
         SyncEntityArrowStorageMsg msg = new SyncEntityArrowStorageMsg(entity.getId(), tag);
         network.sendArrowSyncToPlayer(player, msg);
     }

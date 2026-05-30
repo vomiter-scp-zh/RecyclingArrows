@@ -3,7 +3,6 @@ package com.vomiter.recyclingarrows.common.network;
 import com.vomiter.recyclingarrows.common.arrow.data.ArrowRecordHolderCodec;
 import com.vomiter.recyclingarrows.common.arrow.data.IArrowRecordHolder;
 import com.vomiter.recyclingarrows.common.arrow.platform.EntityArrowStorageAccess;
-import com.vomiter.recyclingarrows.common.network.SyncEntityArrowStorageMsg;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -29,6 +28,6 @@ public final class SyncEntityArrowStorageHandler {
         }
 
         holder.clear();
-        ArrowRecordHolderCodec.load(holder, msg.tag());
+        ArrowRecordHolderCodec.load(holder, msg.tag(), mc.level.registryAccess());
     }
 }

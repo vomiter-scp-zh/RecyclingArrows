@@ -7,7 +7,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
 
 public final class ArrowItemResolver {
     private ArrowItemResolver() {
@@ -27,13 +26,12 @@ public final class ArrowItemResolver {
             return null;
         }
 
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (itemId == null) {
             return null;
         }
 
-        CompoundTag tag = stack.getTag() == null ? new CompoundTag() : stack.getTag().copy();
-        return new StoredArrow(itemId, tag);
+        return new StoredArrow(itemId, stack);
     }
 
     public static ItemStack build(StoredArrowStack storedArrowStack) {
@@ -42,14 +40,6 @@ public final class ArrowItemResolver {
 
     public static ItemStack build(StoredArrow storedArrow) {
         var item = BuiltInRegistries.ITEM.get(storedArrow.itemId());
-        var stack = new ItemStack(item);
-        var tag = storedArrow.tag();
-
-        if (!tag.isEmpty()) {
-            stack.getOrCreateTag();
-            stack.setTag(tag);
-        }
-
-        return stack;
+        return storedArrow.stack().copy();
     }
 }

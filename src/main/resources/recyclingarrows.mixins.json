@@ -6,9 +6,7 @@
   "mixins": [
     "AbstractArrowMixin",
     "ArrowItemMixin",
-    "LivingEntityMixin",
-    "compat.SpartanBoltItemMixin",
-    "compat.SpartanBoltMixin"
+    "LivingEntityMixin"
   ],
   "client": [
   ],
