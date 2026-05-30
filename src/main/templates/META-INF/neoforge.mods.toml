@@ -16,7 +16,7 @@ config="${mod_id}.mixins.json"
 [[dependencies.${mod_id}]] #optional
 modId="neoforge" #mandatory
 type="required" #mandatory
-versionRange="[${neo_version},)" #mandatory
+versionRange="[26.1,26.2)" #mandatory
 ordering="NONE"
 side="BOTH"
 
