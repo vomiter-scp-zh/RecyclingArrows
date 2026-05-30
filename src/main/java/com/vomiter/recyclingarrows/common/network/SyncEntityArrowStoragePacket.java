@@ -4,15 +4,15 @@ import com.vomiter.recyclingarrows.RecyclingArrows;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 
 public record SyncEntityArrowStoragePacket(SyncEntityArrowStorageMsg msg) implements CustomPacketPayload {
 
-    public static final Type<SyncEntityArrowStoragePacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(RecyclingArrows.MOD_ID, "sync_entity_arrow_storage"));
+    public static final Type<@NotNull SyncEntityArrowStoragePacket> TYPE =
+            new Type<>(Identifier.fromNamespaceAndPath(RecyclingArrows.MOD_ID, "sync_entity_arrow_storage"));
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, SyncEntityArrowStoragePacket> STREAM_CODEC =
+    public static final StreamCodec<@NotNull RegistryFriendlyByteBuf, @NotNull SyncEntityArrowStoragePacket> STREAM_CODEC =
             StreamCodec.of(
                     SyncEntityArrowStoragePacket::encode,
                     SyncEntityArrowStoragePacket::decode
@@ -27,7 +27,7 @@ public record SyncEntityArrowStoragePacket(SyncEntityArrowStorageMsg msg) implem
     }
 
     @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
+    public @NotNull Type<? extends @NotNull CustomPacketPayload> type() {
         return TYPE;
     }
 }

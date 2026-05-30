@@ -8,12 +8,13 @@ import com.vomiter.recyclingarrows.common.event.EventHandler;
 import com.vomiter.recyclingarrows.common.network.ArrowSyncService;
 import com.vomiter.recyclingarrows.common.network.NeoForgeArrowNetworkBridge;
 import com.vomiter.recyclingarrows.common.network.NeoForgeNetworkRegistrar;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
 
 @Mod(RecyclingArrows.MOD_ID)
@@ -24,7 +25,7 @@ public class RecyclingArrows
     public static final Logger LOGGER = LogUtils.getLogger();
     public static ArrowSyncService arrowSyncService;
 
-    public static ResourceLocation modLoc(String path){
+    public static Identifier modLoc(String path){
         return Helpers.id(RecyclingArrows.MOD_ID, path);
     }
 

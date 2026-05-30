@@ -7,10 +7,11 @@ import com.vomiter.recyclingarrows.common.arrow.data.IArrowRecordHolder;
 import com.vomiter.recyclingarrows.common.arrow.data.StoredArrow;
 import com.vomiter.recyclingarrows.common.arrow.data.StoredArrowStack;
 import com.vomiter.recyclingarrows.common.arrow.platform.IEntityArrowStorageAccess;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
@@ -39,14 +40,14 @@ public final class ArrowHitService {
                 StoredArrow storedArrow = ArrowItemResolver.resolve(pickUpItem);
 
                 if (storedArrow == null) {
-                    living.spawnAtLocation(pickUpItem);
+                    if(living.level() instanceof ServerLevel serverLevel) living.spawnAtLocation(serverLevel, pickUpItem);
                     return;
                 }
 
                 List<ItemStack> drops = ArrowDropDataManager.INSTANCE.resolveDrops(storedArrow, living.getRandom());
                 for (ItemStack stack : drops) {
                     if (!stack.isEmpty()) {
-                        living.spawnAtLocation(stack);
+                        if(living.level() instanceof ServerLevel serverLevel) living.spawnAtLocation(serverLevel, stack);
                     }
                 }
             }

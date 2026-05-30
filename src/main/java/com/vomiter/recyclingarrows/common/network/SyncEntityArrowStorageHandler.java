@@ -1,5 +1,6 @@
 package com.vomiter.recyclingarrows.common.network;
 
+import com.vomiter.recyclingarrows.RecyclingArrows;
 import com.vomiter.recyclingarrows.common.arrow.data.ArrowRecordHolderCodec;
 import com.vomiter.recyclingarrows.common.arrow.data.IArrowRecordHolder;
 import com.vomiter.recyclingarrows.common.arrow.platform.EntityArrowStorageAccess;
@@ -14,6 +15,7 @@ public final class SyncEntityArrowStorageHandler {
     public static void handleClient(SyncEntityArrowStorageMsg msg) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) {
+            RecyclingArrows.LOGGER.info("[RA] handle abort: level null");
             return;
         }
 

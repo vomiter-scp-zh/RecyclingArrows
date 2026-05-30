@@ -1,21 +1,23 @@
 package com.vomiter.recyclingarrows.common.arrow.data;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-public record StoredArrow(ResourceLocation itemId, ItemStack stack) {
+public record StoredArrow(Identifier itemId, ItemStack stack) {
 
     public StoredArrow {
         stack = stack == null ? ItemStack.EMPTY : stack.copyWithCount(1);
     }
 
-    private static ResourceLocation getId(ItemStack stack1){
+    private static Identifier getId(ItemStack stack1){
         return BuiltInRegistries.ITEM.getKey(stack1.getItem());
     }
 
@@ -32,7 +34,9 @@ public record StoredArrow(ResourceLocation itemId, ItemStack stack) {
             return new CompoundTag();
         }
 
-        Tag saved = stack.save(registries);
+        Tag saved = ItemStack.CODEC
+                .encodeStart(registries.createSerializationContext(NbtOps.INSTANCE), stack)
+                .getOrThrow();
         return saved instanceof CompoundTag compound ? compound : new CompoundTag();
     }
 
@@ -41,18 +45,20 @@ public record StoredArrow(ResourceLocation itemId, ItemStack stack) {
             return new StoredArrow(BuiltInRegistries.ITEM.getKey(Items.AIR), ItemStack.EMPTY);
         }
 
-        ItemStack stack = ItemStack.parseOptional(registries, tag);
+        ItemStack stack = ItemStack.OPTIONAL_CODEC.parse(
+                registries.createSerializationContext(NbtOps.INSTANCE),
+                tag).result().orElse(ItemStack.EMPTY);
         return new StoredArrow(getId(stack), stack);
     }
 
 
-    public StoredArrow copyAs(ResourceLocation newItemId) {
+    public StoredArrow copyAs(Identifier newItemId) {
         return new StoredArrow(newItemId, copyAsStack(newItemId));
     }
 
-    public ItemStack copyAsStack(ResourceLocation newItemId) {
-        Item newItem = BuiltInRegistries.ITEM.get(newItemId);
-        if (newItem == null) {
+    public ItemStack copyAsStack(Identifier newItemId) {
+        Item newItem = BuiltInRegistries.ITEM.get(newItemId).map(Holder.Reference::value).orElse(Items.AIR);
+        if (newItem.getDefaultInstance().isEmpty()) {
             return ItemStack.EMPTY;
         }
 

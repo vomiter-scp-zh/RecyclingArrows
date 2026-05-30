@@ -1,64 +1,56 @@
 package com.vomiter.recyclingarrows.common.arrow.data;
 
-import com.google.gson.*;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.vomiter.recyclingarrows.Config;
 import com.vomiter.recyclingarrows.RecyclingArrows;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.FileToIdConverter;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
-import net.minecraft.util.GsonHelper;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener {
+public final class ArrowDropDataManager
+        extends SimpleJsonResourceReloadListener<ArrowDropDataManager.@NotNull ArrowDropDefinition> {
 
-    private static final Gson GSON = new GsonBuilder().setLenient().create();
     private static final String DIRECTORY = "recycling_arrows";
     private static final String FUNCTION_COPY_DATA = "copy_data";
 
-    private Map<ResourceLocation, ArrowDropDefinition> definitions = Map.of();
-
-    private ArrowDropDataManager() {
-        super(GSON, DIRECTORY);
-    }
+    public static final Identifier RELOAD_LISTENER_ID =
+            Identifier.fromNamespaceAndPath(RecyclingArrows.MOD_ID, "arrow_drop_data");
 
     public static final ArrowDropDataManager INSTANCE = new ArrowDropDataManager();
 
+    private Map<Identifier, ArrowDropDefinition> definitions = Map.of();
+
+    private ArrowDropDataManager() {
+        super(
+                ArrowDropDefinition.CODEC,
+                FileToIdConverter.json(DIRECTORY)
+        );
+    }
+
     @Override
     protected void apply(
-            Map<ResourceLocation, JsonElement> objectMap,
+            Map<Identifier, ArrowDropDefinition> objectMap,
             @NotNull ResourceManager resourceManager,
             @NotNull ProfilerFiller profiler
     ) {
-        Map<ResourceLocation, ArrowDropDefinition> parsed = new HashMap<>();
+        this.definitions = Map.copyOf(objectMap);
 
-        for (Map.Entry<ResourceLocation, JsonElement> entry : objectMap.entrySet()) {
-            ResourceLocation arrowId = entry.getKey();
-
-            try {
-                if (!entry.getValue().isJsonObject()) {
-                    RecyclingArrows.LOGGER.warn(
-                            "Skipping recycling_arrows entry {} because root is not an object",
-                            arrowId
-                    );
-                    continue;
-                }
-
-                ArrowDropDefinition definition = parseDefinition(arrowId, entry.getValue().getAsJsonObject());
-                parsed.put(arrowId, definition);
-            } catch (Exception e) {
-                RecyclingArrows.LOGGER.error("Failed to parse recycling_arrows data for {}", arrowId, e);
-            }
-        }
-
-        this.definitions = Map.copyOf(parsed);
-        RecyclingArrows.LOGGER.info("Loaded {} recycling_arrows definitions", this.definitions.size());
+        RecyclingArrows.LOGGER.info(
+                "Loaded {} recycling_arrows definitions",
+                this.definitions.size()
+        );
     }
 
     public List<ItemStack> resolveDrops(StoredArrow storedArrow, RandomSource random) {
@@ -80,17 +72,15 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
     private List<ItemStack> resolveDropsInternal(
             StoredArrow storedArrow,
             RandomSource random,
-            Set<ResourceLocation> visiting
+            Set<Identifier> visiting
     ) {
-        ResourceLocation arrowId = storedArrow.itemId();
+        Identifier arrowId = storedArrow.itemId();
         ArrowDropDefinition definition = definitions.get(arrowId);
 
-        // 沒有任何 datapack 定義 -> fallback 原本箭矢 ItemStack
         if (definition == null) {
             return fallbackOriginal(storedArrow);
         }
 
-        // 防止 A -> B -> A 這種循環參照
         if (!visiting.add(arrowId)) {
             RecyclingArrows.LOGGER.warn(
                     "Detected cyclic recycling_arrows reference at {}, fallback to original result",
@@ -105,14 +95,13 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
                 return List.of();
             }
 
-            // 參照另一個箭種的結果：
-            // 這裡不再 copy tag，而是把原本 stack 的 components 複製到新的 item 上。
             if (chosen.reference() != null) {
                 StoredArrow referenced = storedArrow.copyAs(chosen.reference());
                 return resolveDropsInternal(referenced, random, visiting);
             }
 
             List<ItemStack> result = new ArrayList<>();
+
             for (ArrowDropEntry entry : chosen.entries()) {
                 if (entry.chance() < 1.0F && random.nextFloat() > entry.chance()) {
                     continue;
@@ -131,8 +120,13 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
     }
 
     private static ItemStack buildEntry(ArrowDropEntry entry, StoredArrow sourceArrow) {
-        Item item = BuiltInRegistries.ITEM.get(entry.itemId());
-        if (item == null) {
+        Item item = BuiltInRegistries.ITEM.getValue(entry.itemId());
+
+        if (item == null || item == Items.AIR) {
+            RecyclingArrows.LOGGER.warn(
+                    "Unknown item id in recycling_arrows drop entry: {}",
+                    entry.itemId()
+            );
             return ItemStack.EMPTY;
         }
 
@@ -148,6 +142,7 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
         if (original.isEmpty()) {
             return List.of();
         }
+
         return List.of(original);
     }
 
@@ -157,6 +152,7 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
         }
 
         int totalWeight = 0;
+
         for (ArrowDropPool pool : pools) {
             if (pool.weight() > 0) {
                 totalWeight += pool.weight();
@@ -176,106 +172,156 @@ public final class ArrowDropDataManager extends SimpleJsonResourceReloadListener
             }
 
             cursor += pool.weight();
+
             if (roll < cursor) {
                 return pool;
             }
         }
 
-        return pools.get(pools.size() - 1);
+        return pools.getLast();
     }
 
-    private static ArrowDropDefinition parseDefinition(ResourceLocation arrowId, JsonObject root) {
-        JsonArray resultsArray = GsonHelper.getAsJsonArray(root, "results");
-        List<ArrowDropPool> pools = new ArrayList<>();
-
-        for (JsonElement element : resultsArray) {
-            if (!element.isJsonObject()) {
-                throw new IllegalArgumentException("Each result pool must be an object: " + arrowId);
-            }
-
-            JsonObject poolObj = element.getAsJsonObject();
-            int weight = GsonHelper.getAsInt(poolObj, "weight", 1);
-
-            ResourceLocation reference = null;
-            List<ArrowDropEntry> entries = List.of();
-
-            if (poolObj.has("items")) {
-                entries = parseItemsArray(GsonHelper.getAsJsonArray(poolObj, "items"));
-            } else if (poolObj.has("results") && poolObj.get("results").isJsonPrimitive()) {
-                reference = parseResourceLocation(poolObj.get("results").getAsString(), "results reference", arrowId);
-            } else if (poolObj.has("result") && poolObj.get("result").isJsonPrimitive()) {
-                reference = parseResourceLocation(poolObj.get("result").getAsString(), "result reference", arrowId);
-            } else {
-                throw new IllegalArgumentException(
-                        "Pool must contain either 'items' array or string 'results'/'result' reference: " + arrowId
-                );
-            }
-
-            pools.add(new ArrowDropPool(weight, entries, reference));
-        }
-
-        return new ArrowDropDefinition(List.copyOf(pools));
-    }
-
-    private static List<ArrowDropEntry> parseItemsArray(JsonArray itemsArray) {
-        List<ArrowDropEntry> entries = new ArrayList<>();
-
-        for (JsonElement itemElement : itemsArray) {
-            if (itemElement.isJsonPrimitive() && itemElement.getAsJsonPrimitive().isString()) {
-                ResourceLocation itemId = parseResourceLocation(itemElement.getAsString(), "item", null);
-                entries.add(new ArrowDropEntry(itemId, 1.0F, false));
-                continue;
-            }
-
-            if (!itemElement.isJsonObject()) {
-                throw new IllegalArgumentException("Each item entry must be a string or object");
-            }
-
-            JsonObject itemObj = itemElement.getAsJsonObject();
-            ResourceLocation itemId = parseResourceLocation(GsonHelper.getAsString(itemObj, "item"), "item", null);
-            float chance = GsonHelper.getAsFloat(itemObj, "chance", 1.0F);
-            boolean copyData = false;
-
-            if (itemObj.has("function")) {
-                String function = GsonHelper.getAsString(itemObj, "function");
-                if (FUNCTION_COPY_DATA.equals(function)) {
-                    copyData = true;
-                } else {
-                    throw new IllegalArgumentException("Unknown function: " + function);
-                }
-            }
-
-            entries.add(new ArrowDropEntry(itemId, chance, copyData));
-        }
-
-        return List.copyOf(entries);
-    }
-
-    private static ResourceLocation parseResourceLocation(String raw, String fieldName, ResourceLocation context) {
-        ResourceLocation id = ResourceLocation.tryParse(raw);
-        if (id == null) {
-            throw new IllegalArgumentException(
-                    "Invalid ResourceLocation in field '" + fieldName + "': " + raw
-                            + (context != null ? " (from " + context + ")" : "")
-            );
-        }
-        return id;
-    }
-
-    public boolean hasDefinition(ResourceLocation arrowId) {
+    public boolean hasDefinition(Identifier arrowId) {
         return definitions.containsKey(arrowId);
     }
 
-    public Map<ResourceLocation, ArrowDropDefinition> getDefinitionsView() {
+    public Map<Identifier, ArrowDropDefinition> getDefinitionsView() {
         return Collections.unmodifiableMap(definitions);
     }
 
     public record ArrowDropDefinition(List<ArrowDropPool> pools) {
+        public static final Codec<ArrowDropDefinition> CODEC = RecordCodecBuilder.create(instance ->
+                instance.group(
+                        ArrowDropPool.CODEC
+                                .listOf()
+                                .fieldOf("results")
+                                .forGetter(ArrowDropDefinition::pools)
+                ).apply(instance, ArrowDropDefinition::new)
+        );
     }
 
-    public record ArrowDropPool(int weight, List<ArrowDropEntry> entries, ResourceLocation reference) {
+    public record ArrowDropPool(int weight, List<ArrowDropEntry> entries, Identifier reference) {
+        private static final Codec<ArrowDropPoolRaw> RAW_CODEC = RecordCodecBuilder.create(instance ->
+                instance.group(
+                        Codec.INT
+                                .optionalFieldOf("weight", 1)
+                                .forGetter(ArrowDropPoolRaw::weight),
+
+                        ArrowDropEntry.CODEC
+                                .listOf()
+                                .optionalFieldOf("items", List.of())
+                                .forGetter(ArrowDropPoolRaw::items),
+
+                        Identifier.CODEC
+                                .optionalFieldOf("result")
+                                .forGetter(ArrowDropPoolRaw::result),
+
+                        Identifier.CODEC
+                                .optionalFieldOf("results")
+                                .forGetter(ArrowDropPoolRaw::results)
+                ).apply(instance, ArrowDropPoolRaw::new)
+        );
+
+        public static final Codec<ArrowDropPool> CODEC =
+                RAW_CODEC.comapFlatMap(ArrowDropPool::fromRaw, ArrowDropPool::toRaw);
+
+        private static DataResult<ArrowDropPool> fromRaw(ArrowDropPoolRaw raw) {
+            boolean hasItems = !raw.items().isEmpty();
+            boolean hasResult = raw.result().isPresent();
+            boolean hasResults = raw.results().isPresent();
+
+            int referenceCount = (hasResult ? 1 : 0) + (hasResults ? 1 : 0);
+
+            if (hasItems && referenceCount > 0) {
+                return DataResult.error(() ->
+                        "A recycling_arrows result pool cannot contain both 'items' and 'result'/'results'"
+                );
+            }
+
+            if (!hasItems && referenceCount == 0) {
+                return DataResult.error(() ->
+                        "A recycling_arrows result pool must contain either 'items' or string 'result'/'results'"
+                );
+            }
+
+            if (referenceCount > 1) {
+                return DataResult.error(() ->
+                        "A recycling_arrows result pool cannot contain both 'result' and 'results'"
+                );
+            }
+
+            Identifier reference = raw.result().or(() -> raw.results()).orElse(null);
+
+            return DataResult.success(
+                    new ArrowDropPool(
+                            raw.weight(),
+                            List.copyOf(raw.items()),
+                            reference
+                    )
+            );
+        }
+
+        private ArrowDropPoolRaw toRaw() {
+            return new ArrowDropPoolRaw(
+                    weight,
+                    entries,
+                    Optional.ofNullable(reference),
+                    Optional.empty()
+            );
+        }
     }
 
-    public record ArrowDropEntry(ResourceLocation itemId, float chance, boolean copyData) {
+    private record ArrowDropPoolRaw(
+            int weight,
+            List<ArrowDropEntry> items,
+            Optional<Identifier> result,
+            Optional<Identifier> results
+    ) {
+    }
+
+    public record ArrowDropEntry(Identifier itemId, float chance, boolean copyData) {
+        private static final Codec<ArrowDropEntry> STRING_CODEC =
+                Identifier.CODEC.xmap(
+                        id -> new ArrowDropEntry(id, 1.0F, false),
+                        ArrowDropEntry::itemId
+                );
+
+        private static final Codec<ArrowDropEntry> OBJECT_CODEC = RecordCodecBuilder.create(instance ->
+                instance.group(
+                        Identifier.CODEC
+                                .fieldOf("item")
+                                .forGetter(ArrowDropEntry::itemId),
+
+                        Codec.FLOAT
+                                .optionalFieldOf("chance", 1.0F)
+                                .forGetter(ArrowDropEntry::chance),
+
+                        Codec.STRING
+                                .optionalFieldOf("function", "")
+                                .xmap(
+                                        function -> {
+                                            if (function.isEmpty()) {
+                                                return false;
+                                            }
+
+                                            if (FUNCTION_COPY_DATA.equals(function)) {
+                                                return true;
+                                            }
+
+                                            throw new IllegalArgumentException("Unknown function: " + function);
+                                        },
+                                        copyData -> copyData ? FUNCTION_COPY_DATA : ""
+                                )
+                                .forGetter(ArrowDropEntry::copyData)
+                ).apply(instance, ArrowDropEntry::new)
+        );
+
+        public static final Codec<ArrowDropEntry> CODEC =
+                Codec.either(STRING_CODEC, OBJECT_CODEC).xmap(
+                        either -> either.map(left -> left, right -> right),
+                        entry -> entry.chance() == 1.0F && !entry.copyData()
+                                ? com.mojang.datafixers.util.Either.left(entry)
+                                : com.mojang.datafixers.util.Either.right(entry)
+                );
     }
 }

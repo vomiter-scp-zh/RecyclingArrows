@@ -9,6 +9,7 @@
     "LivingEntityMixin"
   ],
   "client": [
+    "client.LivingEntityRenderer_RecyclingArrowsMixin"
   ],
   "injectors": {
     "defaultRequire": 1

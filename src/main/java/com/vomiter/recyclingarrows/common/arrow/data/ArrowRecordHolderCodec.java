@@ -5,7 +5,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,35 +44,35 @@ public final class ArrowRecordHolderCodec {
     public static void load(IArrowRecordHolder holder, CompoundTag tag, HolderLookup.Provider registries) {
         holder.clear();
 
-        if (tag == null || !tag.contains(KEY_ARROWS, Tag.TAG_LIST)) {
+        if (tag == null || !tag.contains(KEY_ARROWS)) {
             return;
         }
 
-        ListTag list = tag.getList(KEY_ARROWS, Tag.TAG_COMPOUND);
+        ListTag list = tag.getList(KEY_ARROWS).get();
         for (int i = 0; i < list.size(); i++) {
-            CompoundTag entry = list.getCompound(i);
+            CompoundTag entry = list.getCompound(i).get();
 
-            if (!entry.contains(KEY_ITEM, Tag.TAG_STRING)) {
+            if (!entry.contains(KEY_ITEM)) {
                 continue;
             }
 
-            ResourceLocation itemId = ResourceLocation.tryParse(entry.getString(KEY_ITEM));
+            Identifier itemId = Identifier.tryParse(entry.getString(KEY_ITEM).get());
             if (itemId == null) {
                 continue;
             }
 
             List<HitOctant> octants = new ArrayList<>();
 
-            if (entry.contains(KEY_OCTANTS, Tag.TAG_LIST)) {
-                ListTag octantList = entry.getList(KEY_OCTANTS, Tag.TAG_INT);
+            if (entry.contains(KEY_OCTANTS)) {
+                ListTag octantList = entry.getList(KEY_OCTANTS).get();
                 for (int j = 0; j < octantList.size(); j++) {
-                    int ordinal = octantList.getInt(j);
+                    int ordinal = octantList.getInt(j).get();
                     octants.add(HitOctant.byOrdinalSafe(ordinal));
                 }
             }
             // 舊存檔相容：如果還沒有 Octants，就退回 Count
-            else if (entry.contains(KEY_COUNT, Tag.TAG_INT)) {
-                int count = Math.max(0, entry.getInt(KEY_COUNT));
+            else if (entry.contains(KEY_COUNT)) {
+                int count = Math.max(0, entry.getInt(KEY_COUNT).get());
                 for (int j = 0; j < count; j++) {
                     octants.add(HitOctant.EAST_UP_SOUTH);
                 }
@@ -81,7 +81,7 @@ public final class ArrowRecordHolderCodec {
                 octants.add(HitOctant.EAST_UP_SOUTH);
             }
 
-            holder.addArrow(new StoredArrowStack(StoredArrow.load(entry.getCompound(KEY_STACK), registries), octants));
+            holder.addArrow(new StoredArrowStack(StoredArrow.load(entry.getCompound(KEY_STACK).get(), registries), octants));
         }
     }
 }

@@ -1,15 +1,15 @@
 package com.vomiter.recyclingarrows;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 
 public class Helpers {
-    public static ResourceLocation id(String namespace, String path){
-        return ResourceLocation.fromNamespaceAndPath(namespace, path);
+    public static Identifier id(String namespace, String path){
+        return Identifier.fromNamespaceAndPath(namespace, path);
     }
 
-    public static ResourceLocation id(String path){
+    public static Identifier id(String path){
         return id(RecyclingArrows.MOD_ID, path);
     }
 

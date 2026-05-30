@@ -1,5 +1,6 @@
 package com.vomiter.recyclingarrows.common.network;
 
+import com.vomiter.recyclingarrows.RecyclingArrows;
 import com.vomiter.recyclingarrows.common.arrow.data.ArrowRecordHolderCodec;
 import com.vomiter.recyclingarrows.common.arrow.data.IArrowRecordHolder;
 import com.vomiter.recyclingarrows.common.arrow.platform.EntityArrowStorageAccess;
@@ -15,7 +16,7 @@ public final class ArrowSyncService {
     }
 
     public void sync(LivingEntity entity) {
-        if (entity.level().isClientSide) {
+        if (entity.level().isClientSide()) {
             return;
         }
 
@@ -26,12 +27,21 @@ public final class ArrowSyncService {
     }
 
     public void syncToPlayer(LivingEntity entity, ServerPlayer player) {
-        if (entity.level().isClientSide) {
+        if (entity.level().isClientSide()) {
             return;
         }
 
         IArrowRecordHolder holder = EntityArrowStorageAccess.getOrThrow(entity);
         CompoundTag tag = ArrowRecordHolderCodec.save(holder, player.registryAccess());
+
+        RecyclingArrows.LOGGER.info(
+                "[RA] send packet to player: entity={}, id={}, arrows={}, tag={}",
+                entity,
+                entity.getId(),
+                holder.getArrows().size(),
+                tag
+        );
+
         SyncEntityArrowStorageMsg msg = new SyncEntityArrowStorageMsg(entity.getId(), tag);
         network.sendArrowSyncToPlayer(player, msg);
     }

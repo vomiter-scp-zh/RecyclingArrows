@@ -4,11 +4,13 @@ import com.vomiter.recyclingarrows.Helpers;
 import com.vomiter.recyclingarrows.RecyclingArrows;
 import com.vomiter.recyclingarrows.common.arrow.data.ArrowDropDataManager;
 import com.vomiter.recyclingarrows.common.command.ModCommand;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ShearsItem;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
@@ -28,8 +30,8 @@ public class EventHandler {
         ModCommand.register(event.getDispatcher());
     }
 
-    public static void onAddReloadListener(AddReloadListenerEvent event) {
-        event.addListener(ArrowDropDataManager.INSTANCE);
+    public static void onAddReloadListener(AddServerReloadListenersEvent event) {
+        event.addListener(Identifier.fromNamespaceAndPath(RecyclingArrows.MOD_ID, RecyclingArrows.MOD_ID) ,ArrowDropDataManager.INSTANCE);
     }
 
     public static void onLivingTick(EntityTickEvent.Post event){
@@ -39,7 +41,9 @@ public class EventHandler {
         var storedArrow = RecyclingArrows.ARROW_HIT_SERVICE.removeArrow(mob);
         if(storedArrow == null) return;
         var items = ArrowDropDataManager.INSTANCE.resolveDrops(storedArrow, mob.getRandom());
-        items.forEach(mob::spawnAtLocation);
+        items.forEach(itemStack -> {
+            if(mob.level() instanceof ServerLevel serverLevel) mob.spawnAtLocation(serverLevel, itemStack);
+        });
     }
 
     public static void onInteract(PlayerInteractEvent.EntityInteract event){
@@ -50,7 +54,9 @@ public class EventHandler {
         mob.hurt(mob.damageSources().playerAttack(event.getEntity()), 0.5f);
         event.getEntity().getItemInHand(event.getHand()).hurtAndBreak(1, event.getEntity(), Objects.requireNonNull(Helpers.getHandSlot(event.getHand())));
         var items = ArrowDropDataManager.INSTANCE.resolveDrops(storedArrow, mob.getRandom());
-        items.forEach(mob::spawnAtLocation);
+        items.forEach(itemStack -> {
+            if(mob.level() instanceof ServerLevel serverLevel) mob.spawnAtLocation(serverLevel, itemStack);
+        });
         event.setCanceled(true);
     }
 }

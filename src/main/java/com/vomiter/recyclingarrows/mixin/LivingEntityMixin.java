@@ -1,6 +1,7 @@
 package com.vomiter.recyclingarrows.mixin;
 
 import com.vomiter.recyclingarrows.RecyclingArrows;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,6 +17,10 @@ public class LivingEntityMixin {
         RecyclingArrows
                 .ARROW_HIT_SERVICE
                 .getArrowDrops(self)
-                .forEach(self::spawnAtLocation);
+                .forEach(
+                        itemStack -> {
+                            if(self.level() instanceof ServerLevel serverLevel) self.spawnAtLocation(serverLevel, itemStack);
+                        }
+                );
     }
 }
