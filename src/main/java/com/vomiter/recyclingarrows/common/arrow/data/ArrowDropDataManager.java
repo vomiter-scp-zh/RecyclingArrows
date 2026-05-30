@@ -48,9 +48,14 @@ public final class ArrowDropDataManager
         this.definitions = Map.copyOf(objectMap);
 
         RecyclingArrows.LOGGER.info(
-                "Loaded {} recycling_arrows definitions",
+                "[RA Data] Loaded {} recycling_arrows definitions",
                 this.definitions.size()
         );
+        RecyclingArrows.LOGGER.info(
+                "[RA Data] Loaded {}",
+                this.definitions.keySet()
+        );
+
     }
 
     public List<ItemStack> resolveDrops(StoredArrow storedArrow, RandomSource random) {
@@ -209,7 +214,7 @@ public final class ArrowDropDataManager
 
                         ArrowDropEntry.CODEC
                                 .listOf()
-                                .optionalFieldOf("items", List.of())
+                                .optionalFieldOf("items")
                                 .forGetter(ArrowDropPoolRaw::items),
 
                         Identifier.CODEC
@@ -226,7 +231,7 @@ public final class ArrowDropDataManager
                 RAW_CODEC.comapFlatMap(ArrowDropPool::fromRaw, ArrowDropPool::toRaw);
 
         private static DataResult<ArrowDropPool> fromRaw(ArrowDropPoolRaw raw) {
-            boolean hasItems = !raw.items().isEmpty();
+            boolean hasItems = raw.items().isPresent();
             boolean hasResult = raw.result().isPresent();
             boolean hasResults = raw.results().isPresent();
 
@@ -250,12 +255,12 @@ public final class ArrowDropDataManager
                 );
             }
 
-            Identifier reference = raw.result().or(() -> raw.results()).orElse(null);
+            Identifier reference = raw.result().or(raw::results).orElse(null);
 
             return DataResult.success(
                     new ArrowDropPool(
                             raw.weight(),
-                            List.copyOf(raw.items()),
+                            List.copyOf(raw.items().orElse(List.of())),
                             reference
                     )
             );
@@ -264,7 +269,7 @@ public final class ArrowDropDataManager
         private ArrowDropPoolRaw toRaw() {
             return new ArrowDropPoolRaw(
                     weight,
-                    entries,
+                    Optional.of(entries),
                     Optional.ofNullable(reference),
                     Optional.empty()
             );
@@ -273,7 +278,7 @@ public final class ArrowDropDataManager
 
     private record ArrowDropPoolRaw(
             int weight,
-            List<ArrowDropEntry> items,
+            Optional<List<ArrowDropEntry>> items,
             Optional<Identifier> result,
             Optional<Identifier> results
     ) {
