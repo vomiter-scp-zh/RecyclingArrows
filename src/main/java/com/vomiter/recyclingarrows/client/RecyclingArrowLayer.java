@@ -134,7 +134,8 @@ public class RecyclingArrowLayer<T extends LivingEntity, M extends EntityModel<T
         arrowEntity.xRotO = -pitch;
 
         poseStack.pushPose();
-        poseStack.translate(offset.x, offset.y, offset.z);
+        var extraOffsetY = entity.getBbHeight() < MIN_Y_SIZE_FOR_VERTICAL_OFFSET? 1.1: 0;
+        poseStack.translate(offset.x, offset.y + extraOffsetY, offset.z);
 
         entityRenderDispatcher.render(
                 arrowEntity,
@@ -163,12 +164,10 @@ public class RecyclingArrowLayer<T extends LivingEntity, M extends EntityModel<T
         double jitterY = (random.nextDouble() - 0.5D) * box.getYsize() * 0.12D;
         double jitterZ = (random.nextDouble() - 0.5D) * box.getZsize() * 0.12D;
 
-        if(box.getYsize() < MIN_Y_SIZE_FOR_VERTICAL_OFFSET){
-            baseY = 0.5;
-            jitterY = 0;
-        }
+        var offsetY = entity.getBbHeight() < MIN_Y_SIZE_FOR_VERTICAL_OFFSET? -0.5: baseY + jitterY;
 
-        return new Vec3(baseX + jitterX, baseY + jitterY, baseZ + jitterZ);
+
+        return new Vec3(baseX + jitterX, offsetY, baseZ + jitterZ);
     }
 
     private Vec3 computeArrowLookDirection(T entity, Vec3 insertPos, RandomSource random) {
