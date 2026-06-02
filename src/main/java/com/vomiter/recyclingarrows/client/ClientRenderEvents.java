@@ -9,6 +9,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -41,11 +42,14 @@ public final class ClientRenderEvents {
         if (renderer instanceof LivingEntityRenderer livingRenderer) {
             livingRenderer.addLayer(new RecyclingArrowLayer<>(livingRenderer, dispatcher));
         }
+        else if(ModList.get().isLoaded("geckolib")) {
+            GeckoLibCompat.addLayer(renderer, dispatcher);
+        }
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static void addLayerUnchecked(LivingEntityRenderer<?, ?> renderer,
                                           EntityRenderDispatcher dispatcher) {
-        ((LivingEntityRenderer) renderer).addLayer(new RecyclingArrowLayer(renderer, dispatcher));
+        renderer.addLayer(new RecyclingArrowLayer(renderer, dispatcher));
     }
 }
