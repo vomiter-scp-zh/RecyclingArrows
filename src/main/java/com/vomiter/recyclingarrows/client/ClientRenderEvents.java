@@ -9,6 +9,7 @@ import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
@@ -41,11 +42,14 @@ public final class ClientRenderEvents {
         if (renderer instanceof LivingEntityRenderer livingRenderer) {
             livingRenderer.addLayer(new RecyclingArrowLayer<>(livingRenderer, dispatcher));
         }
+        else if(ModList.get().isLoaded("geckolib")) {
+            GeckoLibCompat.addLayer(renderer, dispatcher);
+        }
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static void addLayerUnchecked(LivingEntityRenderer<?, ?> renderer,
                                           EntityRenderDispatcher dispatcher) {
-        ((LivingEntityRenderer) renderer).addLayer(new RecyclingArrowLayer(renderer, dispatcher));
+        renderer.addLayer(new RecyclingArrowLayer(renderer, dispatcher));
     }
 }
