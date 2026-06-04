@@ -102,7 +102,7 @@ public class RecyclingArrowRenderHelper {
         RandomSource random = RandomSource.create(makeSeed(entity.getUUID(), storedArrow, globalIndex, stackIndex));
 
         //HitOctant renderOctant = mapRecordedOctantToRenderOctant(octant);
-        Vec3 offset = computeOctantOffset(entity, renderOctant, random);
+        Vec3 offset = computeOctantOffset(entity, mapRecordedOctantToRenderOctant(renderOctant), random);
 
         prepareArrow(entity, arrowEntity, random, offset);
         poseStack.pushPose();
