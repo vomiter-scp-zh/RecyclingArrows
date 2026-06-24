@@ -4,7 +4,9 @@ import com.vomiter.recyclingarrows.Helpers;
 import com.vomiter.recyclingarrows.RecyclingArrows;
 import com.vomiter.recyclingarrows.common.arrow.data.ArrowDropDataManager;
 import com.vomiter.recyclingarrows.common.command.ModCommand;
-import net.minecraft.world.entity.Mob;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ShearsItem;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
@@ -22,6 +24,7 @@ public class EventHandler {
         bus.addListener(EventHandler::onAddReloadListener);
         bus.addListener(EventHandler::onLivingTick);
         bus.addListener(EventHandler::onInteract);
+        bus.addListener(EventHandler::onRightClickAir);
     }
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -33,24 +36,41 @@ public class EventHandler {
     }
 
     public static void onLivingTick(EntityTickEvent.Post event){
-        if(!(event.getEntity() instanceof Mob mob)) return;
-        if(mob.tickCount % 500 != 0) return;
-        if(!mob.getRandom().nextBoolean()) return;
-        var storedArrow = RecyclingArrows.ARROW_HIT_SERVICE.removeArrow(mob);
+        if(!(event.getEntity() instanceof LivingEntity living)) return;
+        if(living.tickCount % 500 != 0) return;
+        if(!living.getRandom().nextBoolean()) return;
+        var storedArrow = RecyclingArrows.ARROW_HIT_SERVICE.removeArrow(living);
         if(storedArrow == null) return;
-        var items = ArrowDropDataManager.INSTANCE.resolveDrops(storedArrow, mob.getRandom());
-        items.forEach(mob::spawnAtLocation);
+        if(living instanceof Player player){
+            player.displayClientMessage(Component.translatable("msg.recyclingarrows.arrow_drop"), true);
+        }
+        var items = ArrowDropDataManager.INSTANCE.resolveDrops(storedArrow, living.getRandom());
+        items.forEach(living::spawnAtLocation);
+    }
+
+    public static void onRightClickAir(PlayerInteractEvent.RightClickItem event){
+        Player player = event.getEntity();
+        if(player.isCrouching() && player.getMainHandItem().getItem() instanceof ShearsItem shears){
+            var storedArrow = RecyclingArrows.ARROW_HIT_SERVICE.removeArrow(player);
+            if(storedArrow == null) return;
+            player.hurt(player.damageSources().playerAttack(event.getEntity()), 0.5f);
+            event.getEntity().getItemInHand(event.getHand()).hurtAndBreak(1, event.getEntity(), Objects.requireNonNull(Helpers.getHandSlot(event.getHand())));
+            player.displayClientMessage(Component.translatable("msg.recyclingarrows.arrow_remove"), true);
+            var items = ArrowDropDataManager.INSTANCE.resolveDrops(storedArrow, player.getRandom());
+            items.forEach(player::spawnAtLocation);
+            event.setCanceled(true);
+        }
     }
 
     public static void onInteract(PlayerInteractEvent.EntityInteract event){
-        if(!(event.getTarget() instanceof Mob mob)) return;
+        if(!(event.getTarget() instanceof LivingEntity living)) return;
         if(!(event.getEntity().getItemInHand(event.getHand()).getItem() instanceof ShearsItem shears)) return;
-        var storedArrow = RecyclingArrows.ARROW_HIT_SERVICE.removeArrow(mob);
+        var storedArrow = RecyclingArrows.ARROW_HIT_SERVICE.removeArrow(living);
         if(storedArrow == null) return;
-        mob.hurt(mob.damageSources().playerAttack(event.getEntity()), 0.5f);
+        living.hurt(living.damageSources().playerAttack(event.getEntity()), 0.5f);
         event.getEntity().getItemInHand(event.getHand()).hurtAndBreak(1, event.getEntity(), Objects.requireNonNull(Helpers.getHandSlot(event.getHand())));
-        var items = ArrowDropDataManager.INSTANCE.resolveDrops(storedArrow, mob.getRandom());
-        items.forEach(mob::spawnAtLocation);
+        var items = ArrowDropDataManager.INSTANCE.resolveDrops(storedArrow, living.getRandom());
+        items.forEach(living::spawnAtLocation);
         event.setCanceled(true);
     }
 }

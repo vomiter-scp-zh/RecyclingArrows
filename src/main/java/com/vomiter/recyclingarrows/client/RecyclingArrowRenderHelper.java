@@ -176,7 +176,7 @@ public class RecyclingArrowRenderHelper {
         //So Math.max(..., xSize * 0.5 - 0.5D)
         double baseX = Math.max(box.getXsize() * 0.25D, box.getXsize() * 0.5D - 1D) * octant.xSign() * factor;
         double baseY = Math.max(box.getXsize() * 0.25D, box.getYsize() * 0.5D - 1D) * octant.ySign() * factor;
-        double baseZ = Math.max(box.getXsize() * 0.25D, box.getZsize() * 0.5D - 1D) * factor;
+        double baseZ = Math.max(box.getXsize() * 0.25D, box.getZsize() * 0.5D - 1D) * octant.zSign() * factor;
 
         double jitterX = (random.nextDouble() - 0.5D) * box.getXsize() * 0.12D;
         double jitterY = (random.nextDouble() - 0.5D) * box.getYsize() * 0.12D;
