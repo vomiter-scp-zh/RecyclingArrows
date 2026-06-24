@@ -11,6 +11,7 @@
     "compat.SpartanBoltMixin"
   ],
   "client": [
+    "PlayerRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1
