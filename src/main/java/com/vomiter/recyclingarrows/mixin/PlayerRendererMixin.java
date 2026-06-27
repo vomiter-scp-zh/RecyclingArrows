@@ -8,7 +8,7 @@ import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-@Mixin(value = PlayerRenderer.class, remap = false)
+@Mixin(value = PlayerRenderer.class)
 public class PlayerRendererMixin {
     @WrapOperation(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/player/PlayerRenderer;addLayer(Lnet/minecraft/client/renderer/entity/layers/RenderLayer;)Z"))
     private boolean recyclingarrows$skipVanillaArrowLayer(PlayerRenderer instance, RenderLayer renderLayer, Operation<Boolean> original){
