@@ -39,7 +39,7 @@ public final class ClientRenderEvents {
         }
 
         for (EntityType<?> type : ForgeRegistries.ENTITY_TYPES.getValues()) {
-            if(getIsLiving(type)) tryAddLayerToEntityRenderer(event, type, dispatcher);
+            tryAddLayerToEntityRenderer(event, type, dispatcher);
         }
     }
 
