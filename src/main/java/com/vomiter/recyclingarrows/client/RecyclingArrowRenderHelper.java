@@ -10,6 +10,7 @@ import com.vomiter.recyclingarrows.common.arrow.platform.EntityArrowStorageAcces
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.Item;
@@ -31,7 +32,7 @@ public class RecyclingArrowRenderHelper {
     public static void render(@NotNull PoseStack poseStack,
                               @NotNull MultiBufferSource buffer,
                               int packedLight,
-                              @NotNull LivingEntity entity,
+                              @NotNull Entity entity,
                               float partialTick,
                               EntityRenderDispatcher entityRenderDispatcher) {
         render(poseStack, buffer, packedLight, entity, partialTick, entityRenderDispatcher, false);
@@ -40,12 +41,13 @@ public class RecyclingArrowRenderHelper {
     public static void render(@NotNull PoseStack poseStack,
                        @NotNull MultiBufferSource buffer,
                        int packedLight,
-                       @NotNull LivingEntity entity,
+                       @NotNull Entity entity,
                        float partialTick,
                        EntityRenderDispatcher entityRenderDispatcher,
                        boolean isGecko) {
+        if(!(entity instanceof LivingEntity living)) return;
 
-        var holder = EntityArrowStorageAccess.getNullable(entity);
+        var holder = EntityArrowStorageAccess.getNullable(living);
         if (holder == null) return;
 
         List<StoredArrowStack> stacks = holder.getArrows();
@@ -59,7 +61,7 @@ public class RecyclingArrowRenderHelper {
                         poseStack,
                         buffer,
                         packedLight,
-                        entity,
+                        living,
                         partialTick,
                         stack.getArrow(),
                         octants.get(i),

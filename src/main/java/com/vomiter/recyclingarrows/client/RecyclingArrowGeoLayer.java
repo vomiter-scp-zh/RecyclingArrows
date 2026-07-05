@@ -5,13 +5,13 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Entity;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.core.animatable.GeoAnimatable;
 import software.bernie.geckolib.renderer.GeoRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
-public class RecyclingArrowGeoLayer<T extends LivingEntity & GeoAnimatable>
+public class RecyclingArrowGeoLayer<T extends Entity & GeoAnimatable>
         extends GeoRenderLayer<T> {
 
     private final EntityRenderDispatcher entityRenderDispatcher;

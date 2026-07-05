@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -13,8 +14,16 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import java.util.HashMap;
+
 @Mod.EventBusSubscriber(modid = RecyclingArrows.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ClientRenderEvents {
+    private static HashMap<EntityType<?>, Boolean> IS_LIVING = new HashMap<>();
+    private static Boolean getIsLiving(EntityType<?> type){
+        return IS_LIVING.computeIfAbsent(type, t -> {
+            return  (t.create(Minecraft.getInstance().level) instanceof LivingEntity);
+        });
+    }
     private ClientRenderEvents() {
     }
 
@@ -30,7 +39,7 @@ public final class ClientRenderEvents {
         }
 
         for (EntityType<?> type : ForgeRegistries.ENTITY_TYPES.getValues()) {
-            tryAddLayerToEntityRenderer(event, type, dispatcher);
+            if(getIsLiving(type)) tryAddLayerToEntityRenderer(event, type, dispatcher);
         }
     }
 
@@ -39,6 +48,7 @@ public final class ClientRenderEvents {
                                                     EntityType<?> rawType,
                                                     EntityRenderDispatcher dispatcher) {
         EntityRenderer renderer = event.getEntityRenderer(rawType);
+
         if (renderer instanceof LivingEntityRenderer livingRenderer) {
             livingRenderer.addLayer(new RecyclingArrowLayer<>(livingRenderer, dispatcher));
         }
