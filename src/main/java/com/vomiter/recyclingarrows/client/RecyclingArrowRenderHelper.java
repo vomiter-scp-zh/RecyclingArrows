@@ -101,7 +101,10 @@ public class RecyclingArrowRenderHelper {
 
         RandomSource random = RandomSource.create(makeSeed(entity.getUUID(), storedArrow, globalIndex, stackIndex));
 
-        Vec3 offset = computeOctantOffset(entity, mapRecordedOctantToRenderOctant(renderOctant), random);
+        //HitOctant renderOctant = mapRecordedOctantToRenderOctant(octant);
+        Vec3 offset = computeOctantOffset(entity, mapRecordedOctantToRenderOctant(renderOctant), random, isGecko).add(
+                (getArrowAnchorInRenderSpace(entity))
+        );
 
         prepareArrow(entity, arrowEntity, random, offset);
         poseStack.pushPose();
@@ -166,7 +169,7 @@ public class RecyclingArrowRenderHelper {
 
     }
 
-    private static Vec3 computeOctantOffset(LivingEntity entity, HitOctant octant, RandomSource random) {
+    private static Vec3 computeOctantOffset(LivingEntity entity, HitOctant octant, RandomSource random, boolean isGecko) {
         var box = entity.getBoundingBox();
         var factor = 0.7d;
 
@@ -175,8 +178,8 @@ public class RecyclingArrowRenderHelper {
         //However, it can cause arrows to be immersed in entity
         //So Math.max(..., xSize * 0.5 - 0.5D)
         double baseX = Math.max(box.getXsize() * 0.25D, box.getXsize() * 0.5D - 1D) * octant.xSign() * factor;
-        double baseY = Math.max(box.getXsize() * 0.25D, box.getYsize() * 0.5D - 1D) * octant.ySign() * factor;
-        double baseZ = Math.max(box.getXsize() * 0.25D, box.getZsize() * 0.5D - 1D) * octant.zSign() * factor;
+        double baseY = Math.max(box.getYsize() * 0.25D, box.getYsize() * 0.5D - 1D) * octant.ySign() * factor * (isGecko? -1: 1);
+        double baseZ = Math.max(box.getZsize() * 0.25D, box.getZsize() * 0.5D - 1D) * octant.zSign() * factor;
 
         double jitterX = (random.nextDouble() - 0.5D) * box.getXsize() * 0.12D;
         double jitterY = (random.nextDouble() - 0.5D) * box.getYsize() * 0.12D;
@@ -228,9 +231,6 @@ public class RecyclingArrowRenderHelper {
         return seed;
     }
 
-    /**
-     * 目前依實測結果，render 時需要反轉 Y
-     */
     private static HitOctant mapRecordedOctantToRenderOctant(HitOctant octant) {
         return HitOctant.fromSigns(
                 octant.xSign() > 0,
@@ -239,4 +239,16 @@ public class RecyclingArrowRenderHelper {
         );
     }
 
-}
+    private static Vec3 getArrowAnchorInRenderSpace(LivingEntity entity) {
+        double h = entity.getBbHeight();
+        double w = entity.getBbWidth();
+
+        // 瘦高人形：不要補到 AABB center
+        // Iron Golem H: 2.8; W: 1.4
+        if (h / Math.max(w, 0.001D) > 1.9D) {
+            return new Vec3(0.0D, 0.0D, 0.0D);
+        }
+
+        // 四足或寬體：補到軀幹區
+        return new Vec3(0.0D, h * 0.5D, 0.0D);
+    }}
