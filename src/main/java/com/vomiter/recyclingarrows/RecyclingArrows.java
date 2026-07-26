@@ -1,6 +1,7 @@
 package com.vomiter.recyclingarrows;
 
 import com.mojang.logging.LogUtils;
+import com.vomiter.recyclingarrows.client.ClientRenderEvents;
 import com.vomiter.recyclingarrows.common.arrow.logic.ArrowHitService;
 import com.vomiter.recyclingarrows.common.arrow.platform.EntityArrowStorageAccess;
 import com.vomiter.recyclingarrows.common.arrow.platform.RADataAttachments;
@@ -14,6 +15,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
 
 @Mod(RecyclingArrows.MOD_ID)
@@ -39,6 +41,10 @@ public class RecyclingArrows
         RADataAttachments.register(modBus);
         modBus.addListener(NeoForgeNetworkRegistrar::registerPayloads);
         arrowSyncService = new ArrowSyncService(new NeoForgeArrowNetworkBridge());
+
+        if (FMLEnvironment.dist.isClient()){
+            ClientRenderEvents.init(modBus);
+        }
 
     }
 

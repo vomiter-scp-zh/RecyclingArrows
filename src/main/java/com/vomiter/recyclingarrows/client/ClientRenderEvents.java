@@ -1,6 +1,5 @@
 package com.vomiter.recyclingarrows.client;
 
-import com.vomiter.recyclingarrows.RecyclingArrows;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -8,17 +7,18 @@ import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
-import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
-@EventBusSubscriber(modid = RecyclingArrows.MOD_ID)
 public final class ClientRenderEvents {
     private ClientRenderEvents() {
     }
 
-    @SubscribeEvent
+    public static void init(IEventBus modBus){
+        modBus.addListener(ClientRenderEvents::onAddLayers);
+    }
+
     public static void onAddLayers(EntityRenderersEvent.AddLayers event) {
         EntityRenderDispatcher dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
 
