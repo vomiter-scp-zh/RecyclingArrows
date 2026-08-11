@@ -38,12 +38,15 @@ public class RecyclingArrows
         EventHandler.init();
         modBus.addListener(this::commonSetup);
         mod.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        mod.registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_SPEC);
+
         RADataAttachments.register(modBus);
         modBus.addListener(NeoForgeNetworkRegistrar::registerPayloads);
         arrowSyncService = new ArrowSyncService(new NeoForgeArrowNetworkBridge());
 
         if (FMLEnvironment.dist.isClient()){
             ClientRenderEvents.init(modBus);
+
         }
 
     }

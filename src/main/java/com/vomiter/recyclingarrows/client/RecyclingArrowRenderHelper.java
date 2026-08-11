@@ -2,6 +2,7 @@ package com.vomiter.recyclingarrows.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.vomiter.recyclingarrows.RecyclingArrows;
+import com.vomiter.recyclingarrows.Config;
 import com.vomiter.recyclingarrows.common.arrow.data.HitOctant;
 import com.vomiter.recyclingarrows.common.arrow.data.StoredArrow;
 import com.vomiter.recyclingarrows.common.arrow.data.StoredArrowStack;
@@ -47,6 +48,9 @@ public class RecyclingArrowRenderHelper {
                        boolean isGecko) {
 
         if(!(entity instanceof LivingEntity living)) return;
+
+        if (usesArrowIndicator(living)) return;
+
         var holder = EntityArrowStorageAccess.getNullable(living);
         if (holder == null) return;
 
@@ -73,6 +77,11 @@ public class RecyclingArrowRenderHelper {
                 globalIndex++;
             }
         }
+    }
+
+    public static boolean usesArrowIndicator(@NotNull LivingEntity entity) {
+        var entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        return entityId != null && Config.indicatorEntityTypes().contains(entityId.toString());
     }
 
     private static void renderSingleArrow(PoseStack poseStack,
