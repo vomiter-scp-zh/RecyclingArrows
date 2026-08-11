@@ -40,6 +40,7 @@ public class RecyclingArrows
         modBus.addListener(ModDataGenerator::generateData);
         ModRegistries.register(modBus);
         context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        context.registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_SPEC);
         ForgeNetworkRegistrar.register();
         arrowSyncService = new ArrowSyncService(new ForgeArrowNetworkBridge());
 

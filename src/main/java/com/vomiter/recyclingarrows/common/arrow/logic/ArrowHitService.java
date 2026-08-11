@@ -1,5 +1,6 @@
 package com.vomiter.recyclingarrows.common.arrow.logic;
 
+import com.vomiter.recyclingarrows.Config;
 import com.vomiter.recyclingarrows.RecyclingArrows;
 import com.vomiter.recyclingarrows.common.arrow.data.ArrowDropDataManager;
 import com.vomiter.recyclingarrows.common.arrow.data.HitOctant;
@@ -30,6 +31,12 @@ public final class ArrowHitService {
     }
 
     public static void addArrow(EntityHitResult hit, AbstractArrow arrow, ItemStack pickUpItem) {
+        // Only arrows that a survival player could retrieve should become embedded arrows.
+        // This excludes creative-only and non-pickup projectiles.
+        if (Config.disableUnpickableArrowRecycling() && arrow.pickup != AbstractArrow.Pickup.ALLOWED) {
+            return;
+        }
+
         Entity entity = hit.getEntity();
         if (entity instanceof LivingEntity living) {
             if (living.isAlive()) {
@@ -80,7 +87,7 @@ public final class ArrowHitService {
             }
         }
 
-        holder.addArrow(new StoredArrowStack(stored, java.util.List.of(octant)));
+        holder.addArrow(new StoredArrowStack(stored, List.of(octant)));
     }
 
     public List<ItemStack> getArrowDrops(LivingEntity target) {
